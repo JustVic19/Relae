@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { TaskCandidate } from '../data/mockData';
-import { typography, spacing, borders } from '../theme/tokens';
+import { typography, spacing, borders, shadows } from '../theme/tokens';
 
 interface TaskCardProps {
     task: TaskCandidate;
@@ -112,10 +112,11 @@ export function TaskCard({ task, onConfirm, onEdit, onIgnore }: TaskCardProps) {
 
 const styles = StyleSheet.create({
     card: {
-        borderWidth: borders.width.thick,
-        borderRadius: borders.radius.sm,
+        borderWidth: borders.width.default,
+        borderRadius: borders.radius.md,
         padding: spacing[4],
         marginBottom: spacing[3],
+        ...shadows.card,
     },
     confidenceBadge: {
         position: 'absolute',
@@ -170,6 +171,7 @@ const styles = StyleSheet.create({
         borderWidth: borders.width.default,
         borderRadius: borders.radius.sm,
         alignItems: 'center',
+        ...shadows.button,
     },
     confirmButton: {},
     editButton: {},
