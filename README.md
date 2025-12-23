@@ -1,4 +1,4 @@
-# StudentOS
+# Relae
 
 > **Student Inbox → Action Feed**  
 > Stop manually copying deadlines. Let StudentOS capture, parse, and organize your student obligations automatically.
