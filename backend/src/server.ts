@@ -1,9 +1,8 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { env } from './config/env';
-import { setupRoutes } from './routes';
+import { registerRoutes } from './routes';
 import { errorHandler } from './middleware/errorHandler';
-import { authMiddleware } from './middleware/auth';
 
 const fastify = Fastify({
     logger: {
@@ -36,13 +35,8 @@ async function start() {
         // Auth middleware (decorate request with user)
         fastify.decorateRequest('user', null);
 
-        // Health check (no auth required)
-        fastify.get('/health', async () => {
-            return { status: 'ok', timestamp: new Date().toISOString() };
-        });
-
         // Register routes
-        setupRoutes(fastify);
+        await registerRoutes(fastify);
 
         // Start server
         await fastify.listen({

@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { authMiddleware } from '../middleware/auth';
-import { supabaseAdmin } from '../lib/supabase';
+import { taskCandidateService } from '../services/taskCandidateService';
 import { z } from 'zod';
 
 const confirmSchema = z.object({
@@ -40,52 +40,16 @@ export async function candidateRoutes(fastify: FastifyInstance) {
             const overrides = confirmSchema.parse(request.body || {});
 
             try {
-                // Fetch candidate
-                const { data: candidate, error: fetchError } = await supabaseAdmin
-                    .from('task_candidates')
-                    .select('*')
-                    .eq('id', id)
-                    .eq('user_id', user.id)
-                    .single();
-
-                if (fetchError || !candidate) {
-                    return reply.code(404).send({ error: 'Candidate not found' });
+                const result = await taskCandidateService.confirmCandidate(id, user.id, overrides);
+                return { task: result.task };
+            } catch (error: any) {
+                if (error.message.includes('not found')) {
+                    return reply.code(404).send({ error: error.message });
+                }
+                if (error.message.includes('already processed')) {
+                    return reply.code(400).send({ error: error.message });
                 }
 
-                if (candidate.status !== 'new') {
-                    return reply.code(400).send({ error: 'Candidate already processed' });
-                }
-
-                // Create task
-                const { data: task, error: taskError } = await supabaseAdmin
-                    .from('tasks')
-                    .insert({
-                        candidate_id: candidate.id,
-                        user_id: user.id,
-                        thread_id: candidate.thread_id,
-                        title: overrides.title || candidate.title,
-                        type: overrides.type || candidate.type,
-                        module: overrides.module || candidate.module,
-                        due_date: overrides.due_date || candidate.due_date,
-                        notes: overrides.notes,
-                        links: candidate.links,
-                        status: 'pending',
-                    })
-                    .select()
-                    .single();
-
-                if (taskError) {
-                    throw taskError;
-                }
-
-                // Update candidate status
-                await supabaseAdmin
-                    .from('task_candidates')
-                    .update({ status: 'confirmed', updated_at: new Date().toISOString() })
-                    .eq('id', id);
-
-                return { task };
-            } catch (error) {
                 request.log.error({ error, candidateId: id }, 'Failed to confirm candidate');
                 return reply.code(500).send({ error: 'Failed to confirm candidate' });
             }
@@ -105,28 +69,13 @@ export async function candidateRoutes(fastify: FastifyInstance) {
             const updates = editSchema.parse(request.body);
 
             try {
-                const { data, error } = await supabaseAdmin
-                    .from('task_candidates')
-                    .update({
-                        ...updates,
-                        status: 'edited',
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq('id', id)
-                    .eq('user_id', user.id)
-                    .select()
-                    .single();
-
-                if (error) {
-                    throw error;
+                const candidate = await taskCandidateService.editCandidate(id, user.id, updates);
+                return { candidate };
+            } catch (error: any) {
+                if (error.message.includes('not found')) {
+                    return reply.code(404).send({ error: error.message });
                 }
 
-                if (!data) {
-                    return reply.code(404).send({ error: 'Candidate not found' });
-                }
-
-                return { candidate: data };
-            } catch (error) {
                 request.log.error({ error, candidateId: id }, 'Failed to edit candidate');
                 return reply.code(500).send({ error: 'Failed to edit candidate' });
             }
@@ -146,24 +95,7 @@ export async function candidateRoutes(fastify: FastifyInstance) {
             const { reason } = ignoreSchema.parse(request.body || {});
 
             try {
-                const { data, error } = await supabaseAdmin
-                    .from('task_candidates')
-                    .update({
-                        status: 'ignored',
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq('id', id)
-                    .eq('user_id', user.id)
-                    .select()
-                    .single();
-
-                if (error) {
-                    throw error;
-                }
-
-                if (!data) {
-                    return reply.code(404).send({ error: 'Candidate not found' });
-                }
+                await taskCandidateService.ignoreCandidate(id, user.id, reason);
 
                 // Log ignore reason for analytics (optional)
                 if (reason) {
@@ -171,7 +103,11 @@ export async function candidateRoutes(fastify: FastifyInstance) {
                 }
 
                 return { success: true };
-            } catch (error) {
+            } catch (error: any) {
+                if (error.message.includes('not found')) {
+                    return reply.code(404).send({ error: error.message });
+                }
+
                 request.log.error({ error, candidateId: id }, 'Failed to ignore candidate');
                 return reply.code(500).send({ error: 'Failed to ignore candidate' });
             }
@@ -190,29 +126,13 @@ export async function candidateRoutes(fastify: FastifyInstance) {
             const { id } = request.params;
 
             try {
-                const { data: candidate, error: candidateError } = await supabaseAdmin
-                    .from('task_candidates')
-                    .select('source_message_id')
-                    .eq('id', id)
-                    .eq('user_id', user.id)
-                    .single();
-
-                if (candidateError || !candidate) {
-                    return reply.code(404).send({ error: 'Candidate not found' });
+                const source = await taskCandidateService.getCandidateSource(id, user.id);
+                return { source };
+            } catch (error: any) {
+                if (error.message.includes('not found')) {
+                    return reply.code(404).send({ error: error.message });
                 }
 
-                const { data: sourceMessage, error: sourceError } = await supabaseAdmin
-                    .from('source_messages')
-                    .select('subject, from_name, from_email, received_at, body_snippet, urls')
-                    .eq('id', candidate.source_message_id)
-                    .single();
-
-                if (sourceError || !sourceMessage) {
-                    return reply.code(404).send({ error: 'Source message not found' });
-                }
-
-                return { source: sourceMessage };
-            } catch (error) {
                 request.log.error({ error, candidateId: id }, 'Failed to fetch source');
                 return reply.code(500).send({ error: 'Failed to fetch source' });
             }

@@ -51,6 +51,23 @@ CREATE TABLE IF NOT EXISTS source_messages (
 CREATE INDEX IF NOT EXISTS idx_source_messages_integration ON source_messages(integration_id);
 CREATE INDEX IF NOT EXISTS idx_source_messages_received ON source_messages(received_at DESC);
 
+-- Threads (canonical task with dedup/merge history)
+-- MOVED BEFORE task_candidates because task_candidates references it
+CREATE TABLE IF NOT EXISTS threads (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  canonical_title TEXT NOT NULL,
+  canonical_due_date TIMESTAMPTZ,
+  canonical_module TEXT,
+  canonical_type TEXT NOT NULL,
+  merge_fingerprint TEXT, -- for matching (e.g., submission link hash)
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_threads_user ON threads(user_id);
+CREATE INDEX IF NOT EXISTS idx_threads_fingerprint ON threads(merge_fingerprint);
+
 -- Task candidates (extracted from emails)
 CREATE TABLE IF NOT EXISTS task_candidates (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -74,22 +91,6 @@ CREATE TABLE IF NOT EXISTS task_candidates (
 
 CREATE INDEX IF NOT EXISTS idx_candidates_user_status ON task_candidates(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_candidates_thread ON task_candidates(thread_id);
-
--- Threads (canonical task with dedup/merge history)
-CREATE TABLE IF NOT EXISTS threads (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  canonical_title TEXT NOT NULL,
-  canonical_due_date TIMESTAMPTZ,
-  canonical_module TEXT,
-  canonical_type TEXT NOT NULL,
-  merge_fingerprint TEXT, -- for matching (e.g., submission link hash)
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_threads_user ON threads(user_id);
-CREATE INDEX IF NOT EXISTS idx_threads_fingerprint ON threads(merge_fingerprint);
 
 -- Tasks (confirmed candidates)
 CREATE TABLE IF NOT EXISTS tasks (

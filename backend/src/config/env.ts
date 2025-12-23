@@ -10,20 +10,20 @@ const envSchema = z.object({
 
     // Supabase
     SUPABASE_URL: z.string().url(),
-    SUPABASE_ANON_KEY: z.string(),
-    SUPABASE_SERVICE_ROLE_KEY: z.string(),
+    SUPABASE_ANON_KEY: z.string().min(1),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
-    // Redis
-    REDIS_URL: z.string().url(),
+    // Redis (optional for basic features)
+    REDIS_URL: z.string().url().optional(),
 
-    // Gmail API
-    GOOGLE_CLIENT_ID: z.string(),
-    GOOGLE_CLIENT_SECRET: z.string(),
-    GOOGLE_REDIRECT_URI: z.string().url(),
+    // Gmail API (optional for email features)
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
+    GOOGLE_REDIRECT_URI: z.string().url().optional(),
     GOOGLE_PUBSUB_TOPIC: z.string().optional(),
 
-    // Encryption
-    ENCRYPTION_KEY: z.string().min(32),
+    // Encryption (optional for basic features)
+    ENCRYPTION_KEY: z.string().optional(),
 
     // Email Forwarding
     FORWARDING_DOMAIN: z.string().optional(),
