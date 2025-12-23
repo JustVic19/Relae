@@ -1,11 +1,11 @@
 # Relae
 
 > **Student Inbox → Action Feed**  
-> Stop manually copying deadlines. Let StudentOS capture, parse, and organize your student obligations automatically.
+> Stop manually copying deadlines. Let Relae capture, parse, and organize your student obligations automatically.
 
 ## 🎯 Vision
 
-StudentOS is a student productivity app that automatically extracts tasks from your emails and helps you stay on top of deadlines without the manual overhead.
+Relae is a student productivity app that automatically extracts tasks from your emails and helps you stay on top of deadlines without the manual overhead.
 
 ### Phased Approach
 
@@ -36,7 +36,7 @@ StudentOS/
 Built with:
 - Expo (React Native)
 - TypeScript
-- Digital Brutalist design system
+- Digital Brutalism design system
 - Light + Dark mode support
 
 ## 🔧 Backend
@@ -57,7 +57,7 @@ Built with:
 
 ## 📅 Timeline
 
-- **Pilot launch**: January 12, 2025
+- **Pilot launch**: January 12, 2026
 - **Target**: 20-30 university students
 - **Duration**: 2 weeks
 
