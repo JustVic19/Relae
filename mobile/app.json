@@ -3,6 +3,7 @@
     "name": "Relae",
     "slug": "relae",
     "version": "1.0.0",
+    "scheme": "relae",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,13 +14,18 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.relaeai.app",
+      "associatedDomains": [
+        "applinks:kikaavafovalupmhzmpc.supabase.co"
+      ]
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.relaeai.app",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
