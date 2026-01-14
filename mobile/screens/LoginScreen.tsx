@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -7,6 +7,7 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
     const { signIn, signInWithGoogle, signInWithApple, loading } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(true);
     const [error, setError] = useState('');
 
@@ -55,120 +56,134 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <View style={styles.inner}>
-                    <View style={styles.content}>
-                        {/* Title */}
-                        <Text style={styles.title}>Hi There!</Text>
-                        <Text style={styles.subtitle}>Please enter your details</Text>
+            <ScrollView
+                contentContainerStyle={styles.scrollContainer}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <View style={styles.inner}>
+                        <View style={styles.content}>
+                            {/* Title */}
+                            <Text style={styles.title}>Hi There!</Text>
+                            <Text style={styles.subtitle}>Please enter your details</Text>
 
-                        {/* Social Login Buttons */}
-                        <View style={styles.socialButtons}>
-                            <TouchableOpacity
-                                style={styles.socialButton}
-                                onPress={handleGoogleSignIn}
-                                disabled={loading}
-                            >
-                                <Image
-                                    source={require('../assets/google-logo.png')}
-                                    style={styles.socialLogo}
-                                    resizeMode="contain"
-                                />
-                                <Text style={styles.socialButtonText}>Google</Text>
-                            </TouchableOpacity>
+                            {/* Social Login Buttons */}
+                            <View style={styles.socialButtons}>
+                                <TouchableOpacity
+                                    style={styles.socialButton}
+                                    onPress={handleGoogleSignIn}
+                                    disabled={loading}
+                                >
+                                    <Image
+                                        source={require('../assets/google-logo.png')}
+                                        style={styles.socialLogo}
+                                        resizeMode="contain"
+                                    />
+                                    <Text style={styles.socialButtonText}>Google</Text>
+                                </TouchableOpacity>
 
-                            <TouchableOpacity
-                                style={styles.socialButton}
-                                onPress={handleAppleSignIn}
-                                disabled={loading}
-                            >
-                                <Image
-                                    source={require('../assets/apple-logo.png')}
-                                    style={styles.socialLogo}
-                                    resizeMode="contain"
-                                />
-                                <Text style={styles.socialButtonText}>Apple</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Divider */}
-                        <View style={styles.divider}>
-                            <View style={styles.dividerLine} />
-                            <Text style={styles.dividerText}>Or</Text>
-                            <View style={styles.dividerLine} />
-                        </View>
-
-                        {/* Email Input */}
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Email address"
-                            placeholderTextColor="#666"
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            autoComplete="email"
-                            returnKeyType="next"
-                        />
-
-                        {/* Password Input */}
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Password"
-                            placeholderTextColor="#666"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                            autoComplete="password"
-                            returnKeyType="done"
-                            onSubmitEditing={handleLogin}
-                        />
-
-                        {/* Forgot Password Link */}
-                        <TouchableOpacity
-                            style={styles.forgotPassword}
-                            onPress={() => navigation.navigate('ForgotPassword')}
-                        >
-                            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                        </TouchableOpacity>
-
-                        {/* Error Message */}
-                        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-                        {/* Remember Me */}
-                        <TouchableOpacity
-                            style={styles.rememberMeContainer}
-                            onPress={() => setRememberMe(!rememberMe)}
-                        >
-                            <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                                {rememberMe && <Text style={styles.checkmark}>✓</Text>}
+                                <TouchableOpacity
+                                    style={styles.socialButton}
+                                    onPress={handleAppleSignIn}
+                                    disabled={loading}
+                                >
+                                    <Image
+                                        source={require('../assets/apple-logo.png')}
+                                        style={styles.socialLogo}
+                                        resizeMode="contain"
+                                    />
+                                    <Text style={styles.socialButtonText}>Apple</Text>
+                                </TouchableOpacity>
                             </View>
-                            <Text style={styles.rememberMeText}>Remember me</Text>
-                        </TouchableOpacity>
 
-                        {/* Login Button */}
-                        <TouchableOpacity
-                            style={styles.loginButton}
-                            onPress={handleLogin}
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color="#FFFFFF" />
-                            ) : (
-                                <Text style={styles.loginButtonText}>Log In</Text>
-                            )}
-                        </TouchableOpacity>
+                            {/* Divider */}
+                            <View style={styles.divider}>
+                                <View style={styles.dividerLine} />
+                                <Text style={styles.dividerText}>Or</Text>
+                                <View style={styles.dividerLine} />
+                            </View>
 
-                        {/* Sign Up Link */}
-                        <View style={styles.footer}>
-                            <Text style={styles.footerText}>Create an account? </Text>
-                            <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-                                <Text style={styles.footerLink}>Sign Up</Text>
+                            {/* Email Input */}
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Email address"
+                                placeholderTextColor="#666"
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                autoComplete="email"
+                                returnKeyType="next"
+                            />
+
+                            {/* Password Input */}
+                            <View style={styles.passwordContainer}>
+                                <TextInput
+                                    style={styles.passwordInput}
+                                    placeholder="Password"
+                                    placeholderTextColor="#666"
+                                    value={password}
+                                    onChangeText={setPassword}
+                                    secureTextEntry={!showPassword}
+                                    autoComplete="password"
+                                    returnKeyType="done"
+                                    onSubmitEditing={handleLogin}
+                                />
+                                <TouchableOpacity
+                                    style={styles.eyeButton}
+                                    onPress={() => setShowPassword(!showPassword)}
+                                >
+                                    <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Forgot Password Link */}
+                            <TouchableOpacity
+                                style={styles.forgotPassword}
+                                onPress={() => navigation.navigate('ForgotPassword')}
+                            >
+                                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                             </TouchableOpacity>
+
+                            {/* Error Message */}
+                            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+                            {/* Remember Me */}
+                            <TouchableOpacity
+                                style={styles.rememberMeContainer}
+                                onPress={() => setRememberMe(!rememberMe)}
+                            >
+                                <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                                    {rememberMe && <Text style={styles.checkmark}>✓</Text>}
+                                </View>
+                                <Text style={styles.rememberMeText}>Remember me</Text>
+                            </TouchableOpacity>
+
+                            {/* Login Button */}
+                            <TouchableOpacity
+                                style={styles.loginButton}
+                                onPress={handleLogin}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color="#FFFFFF" />
+                                ) : (
+                                    <Text style={styles.loginButtonText}>Log In</Text>
+                                )}
+                            </TouchableOpacity>
+
+                            {/* Sign Up Link */}
+                            <View style={styles.footer}>
+                                <Text style={styles.footerText}>Create an account? </Text>
+                                <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+                                    <Text style={styles.footerLink}>Sign Up</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
-                </View>
-            </TouchableWithoutFeedback>
+                </TouchableWithoutFeedback>
+            </ScrollView>
         </KeyboardAvoidingView>
     );
 }
@@ -177,6 +192,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FAF4F0',
+    },
+    scrollContainer: {
+        flexGrow: 1,
     },
     inner: {
         flex: 1,
@@ -247,6 +265,31 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#FFFFFF',
         marginBottom: 16,
+    },
+    passwordContainer: {
+        position: 'relative',
+        marginBottom: 16,
+    },
+    passwordInput: {
+        backgroundColor: '#000000',
+        paddingVertical: 18,
+        paddingHorizontal: 24,
+        paddingRight: 56,
+        borderRadius: 28,
+        fontSize: 16,
+        color: '#FFFFFF',
+    },
+    eyeButton: {
+        position: 'absolute',
+        right: 16,
+        top: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 8,
+    },
+    eyeIcon: {
+        fontSize: 20,
     },
     forgotPassword: {
         alignSelf: 'flex-end',

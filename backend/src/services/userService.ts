@@ -3,6 +3,8 @@ import { supabaseAdmin } from '../lib/supabase';
 export interface UserProfile {
     id: string;
     email: string;
+    display_name: string | null;
+    avatar_url: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -10,10 +12,13 @@ export interface UserProfile {
 export interface CreateUserProfileInput {
     id: string;
     email: string;
+    display_name?: string;
 }
 
 export interface UpdateUserProfileInput {
     email?: string;
+    display_name?: string;
+    avatar_url?: string;
 }
 
 export class UserService {

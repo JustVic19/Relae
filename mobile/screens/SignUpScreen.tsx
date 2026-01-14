@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function SignUpScreen({ navigation }: { navigation: any }) {
@@ -7,6 +7,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [passwordVisible, setPasswordVisible] = useState(false);
     const [error, setError] = useState('');
 
     const handleEmailSubmit = () => {
@@ -62,117 +63,131 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <View style={styles.inner}>
-                    {/* Back Button */}
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Text style={styles.backButtonText}>← Back</Text>
-                    </TouchableOpacity>
-
-                    <View style={styles.content}>
-                        {/* Title */}
-                        <Text style={styles.title}>Create An Account</Text>
-                        <Text style={styles.subtitle}>
-                            To create an account provide your details, verify,{'\n'}and set a password
-                        </Text>
-
-                        {/* Social Login Buttons */}
-                        <View style={styles.socialButtons}>
-                            <TouchableOpacity
-                                style={styles.socialButton}
-                                onPress={handleGoogleSignUp}
-                                disabled={loading}
-                            >
-                                <Image
-                                    source={require('../assets/google-logo.png')}
-                                    style={styles.socialLogo}
-                                    resizeMode="contain"
-                                />
-                                <Text style={styles.socialButtonText}>Google</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={styles.socialButton}
-                                onPress={handleAppleSignUp}
-                                disabled={loading}
-                            >
-                                <Image
-                                    source={require('../assets/apple-logo.png')}
-                                    style={styles.socialLogo}
-                                    resizeMode="contain"
-                                />
-                                <Text style={styles.socialButtonText}>Apple</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Divider */}
-                        <View style={styles.divider}>
-                            <View style={styles.dividerLine} />
-                            <Text style={styles.dividerText}>Or</Text>
-                            <View style={styles.dividerLine} />
-                        </View>
-
-                        {/* Email Input */}
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Email address"
-                            placeholderTextColor="#666"
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            autoComplete="email"
-                            returnKeyType="next"
-                            onSubmitEditing={handleEmailSubmit}
-                        />
-
-                        {/* Password Input - Shows after email is entered */}
-                        {showPassword && (
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Password"
-                                placeholderTextColor="#666"
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry
-                                autoComplete="password-new"
-                                returnKeyType="done"
-                                onSubmitEditing={handleSignUp}
-                            />
-                        )}
-
-                        {/* Error Message */}
-                        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-                        {/* Continue Button */}
+            <ScrollView
+                contentContainerStyle={styles.scrollContainer}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <View style={styles.inner}>
+                        {/* Back Button */}
                         <TouchableOpacity
-                            style={styles.continueButton}
-                            onPress={showPassword ? handleSignUp : handleEmailSubmit}
-                            disabled={loading}
+                            style={styles.backButton}
+                            onPress={() => navigation.goBack()}
                         >
-                            {loading ? (
-                                <ActivityIndicator color="#FFFFFF" />
-                            ) : (
-                                <Text style={styles.continueButtonText}>
-                                    {showPassword ? 'Create Account' : 'Continue'}
-                                </Text>
-                            )}
+                            <Text style={styles.backButtonText}>← Back</Text>
                         </TouchableOpacity>
 
-                        {/* Login Link */}
-                        <View style={styles.footer}>
-                            <Text style={styles.footerText}>Have an account? </Text>
-                            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                                <Text style={styles.footerLink}>Log In</Text>
+                        <View style={styles.content}>
+                            {/* Title */}
+                            <Text style={styles.title}>Create An Account</Text>
+                            <Text style={styles.subtitle}>
+                                To create an account provide your details, verify,{'\n'}and set a password
+                            </Text>
+
+                            {/* Social Login Buttons */}
+                            <View style={styles.socialButtons}>
+                                <TouchableOpacity
+                                    style={styles.socialButton}
+                                    onPress={handleGoogleSignUp}
+                                    disabled={loading}
+                                >
+                                    <Image
+                                        source={require('../assets/google-logo.png')}
+                                        style={styles.socialLogo}
+                                        resizeMode="contain"
+                                    />
+                                    <Text style={styles.socialButtonText}>Google</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.socialButton}
+                                    onPress={handleAppleSignUp}
+                                    disabled={loading}
+                                >
+                                    <Image
+                                        source={require('../assets/apple-logo.png')}
+                                        style={styles.socialLogo}
+                                        resizeMode="contain"
+                                    />
+                                    <Text style={styles.socialButtonText}>Apple</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Divider */}
+                            <View style={styles.divider}>
+                                <View style={styles.dividerLine} />
+                                <Text style={styles.dividerText}>Or</Text>
+                                <View style={styles.dividerLine} />
+                            </View>
+
+                            {/* Email Input */}
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Email address"
+                                placeholderTextColor="#666"
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                autoComplete="email"
+                                returnKeyType="next"
+                                onSubmitEditing={handleEmailSubmit}
+                            />
+
+                            {/* Password Input - Shows after email is entered */}
+                            {showPassword && (
+                                <View style={styles.passwordContainer}>
+                                    <TextInput
+                                        style={styles.passwordInput}
+                                        placeholder="Password"
+                                        placeholderTextColor="#666"
+                                        value={password}
+                                        onChangeText={setPassword}
+                                        secureTextEntry={!passwordVisible}
+                                        autoComplete="password-new"
+                                        returnKeyType="done"
+                                        onSubmitEditing={handleSignUp}
+                                    />
+                                    <TouchableOpacity
+                                        style={styles.eyeButton}
+                                        onPress={() => setPasswordVisible(!passwordVisible)}
+                                    >
+                                        <Text style={styles.eyeIcon}>{passwordVisible ? '👁️' : '👁️‍🗨️'}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+
+                            {/* Error Message */}
+                            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+                            {/* Continue Button */}
+                            <TouchableOpacity
+                                style={styles.continueButton}
+                                onPress={showPassword ? handleSignUp : handleEmailSubmit}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color="#FFFFFF" />
+                                ) : (
+                                    <Text style={styles.continueButtonText}>
+                                        {showPassword ? 'Create Account' : 'Continue'}
+                                    </Text>
+                                )}
                             </TouchableOpacity>
+
+                            {/* Login Link */}
+                            <View style={styles.footer}>
+                                <Text style={styles.footerText}>Have an account? </Text>
+                                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                                    <Text style={styles.footerLink}>Log In</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
-                </View>
-            </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
+                </TouchableWithoutFeedback>
+            </ScrollView>
+        </KeyboardAvoidingView >
     );
 }
 
@@ -180,6 +195,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FAF4F0',
+    },
+    scrollContainer: {
+        flexGrow: 1,
     },
     inner: {
         flex: 1,
@@ -261,6 +279,31 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#FFFFFF',
         marginBottom: 16,
+    },
+    passwordContainer: {
+        position: 'relative',
+        marginBottom: 16,
+    },
+    passwordInput: {
+        backgroundColor: '#000000',
+        paddingVertical: 18,
+        paddingHorizontal: 24,
+        paddingRight: 56,
+        borderRadius: 28,
+        fontSize: 16,
+        color: '#FFFFFF',
+    },
+    eyeButton: {
+        position: 'absolute',
+        right: 16,
+        top: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 8,
+    },
+    eyeIcon: {
+        fontSize: 20,
     },
     error: {
         color: '#ff6b6b',

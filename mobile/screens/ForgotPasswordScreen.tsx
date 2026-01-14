@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function ForgotPasswordScreen({ navigation }: { navigation: any }) {
@@ -30,80 +30,86 @@ export default function ForgotPasswordScreen({ navigation }: { navigation: any }
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <View style={styles.inner}>
-                    <View style={styles.content}>
-                        {!success ? (
-                            <>
-                                {/* Title */}
-                                <Text style={styles.title}>Forgot Password?</Text>
-                                <Text style={styles.subtitle}>
-                                    No worries! To reset you password. Please entre{'\n'}your email address
-                                </Text>
-
-                                {/* Email Input */}
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Email address"
-                                    placeholderTextColor="#666"
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    autoComplete="email"
-                                    returnKeyType="done"
-                                    onSubmitEditing={handleResetPassword}
-                                />
-
-                                {/* Error Message */}
-                                {error ? <Text style={styles.error}>{error}</Text> : null}
-
-                                {/* Reset Password Button */}
-                                <TouchableOpacity
-                                    style={styles.resetButton}
-                                    onPress={handleResetPassword}
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <ActivityIndicator color="#FFFFFF" />
-                                    ) : (
-                                        <Text style={styles.resetButtonText}>Reset password</Text>
-                                    )}
-                                </TouchableOpacity>
-                            </>
-                        ) : (
-                            <>
-                                {/* Success Message */}
-                                <View style={styles.successContainer}>
-                                    <Text style={styles.successIcon}>✉️</Text>
-                                    <Text style={styles.successTitle}>Check your email!</Text>
-                                    <Text style={styles.successText}>
-                                        We've sent a password reset link to{'\n'}{email}
+            <ScrollView
+                contentContainerStyle={styles.scrollContainer}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <View style={styles.inner}>
+                        <View style={styles.content}>
+                            {!success ? (
+                                <>
+                                    {/* Title */}
+                                    <Text style={styles.title}>Forgot Password?</Text>
+                                    <Text style={styles.subtitle}>
+                                        No worries! To reset you password. Please entre{'\n'}your email address
                                     </Text>
-                                </View>
 
-                                {/* Back to Login Button */}
+                                    {/* Email Input */}
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Email address"
+                                        placeholderTextColor="#666"
+                                        value={email}
+                                        onChangeText={setEmail}
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                        autoComplete="email"
+                                        returnKeyType="done"
+                                        onSubmitEditing={handleResetPassword}
+                                    />
+
+                                    {/* Error Message */}
+                                    {error ? <Text style={styles.error}>{error}</Text> : null}
+
+                                    {/* Reset Password Button */}
+                                    <TouchableOpacity
+                                        style={styles.resetButton}
+                                        onPress={handleResetPassword}
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <ActivityIndicator color="#FFFFFF" />
+                                        ) : (
+                                            <Text style={styles.resetButtonText}>Reset password</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Success Message */}
+                                    <View style={styles.successContainer}>
+                                        <Text style={styles.successIcon}>✉️</Text>
+                                        <Text style={styles.successTitle}>Check your email!</Text>
+                                        <Text style={styles.successText}>
+                                            We've sent a password reset link to{'\n'}{email}
+                                        </Text>
+                                    </View>
+
+                                    {/* Back to Login Button */}
+                                    <TouchableOpacity
+                                        style={styles.resetButton}
+                                        onPress={() => navigation.navigate('Login')}
+                                    >
+                                        <Text style={styles.resetButtonText}>Back to Login</Text>
+                                    </TouchableOpacity>
+                                </>
+                            )}
+
+                            {/* Back Navigation */}
+                            {!success && (
                                 <TouchableOpacity
-                                    style={styles.resetButton}
-                                    onPress={() => navigation.navigate('Login')}
+                                    style={styles.backButton}
+                                    onPress={() => navigation.goBack()}
                                 >
-                                    <Text style={styles.resetButtonText}>Back to Login</Text>
+                                    <Text style={styles.backButtonText}>← Back</Text>
                                 </TouchableOpacity>
-                            </>
-                        )}
-
-                        {/* Back Navigation */}
-                        {!success && (
-                            <TouchableOpacity
-                                style={styles.backButton}
-                                onPress={() => navigation.goBack()}
-                            >
-                                <Text style={styles.backButtonText}>← Back</Text>
-                            </TouchableOpacity>
-                        )}
+                            )}
+                        </View>
                     </View>
-                </View>
-            </TouchableWithoutFeedback>
+                </TouchableWithoutFeedback>
+            </ScrollView>
         </KeyboardAvoidingView>
     );
 }
@@ -112,6 +118,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FAF4F0',
+    },
+    scrollContainer: {
+        flexGrow: 1,
     },
     inner: {
         flex: 1,

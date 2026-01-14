@@ -90,7 +90,7 @@ export default function OnboardingContainer({ navigation }: OnboardingContainerP
 
         return (
             <View style={styles.screen}>
-                <ScreenComponent onNext={index === 3 ? handleGetStarted : goToNext} />
+                <ScreenComponent onNext={handleGetStarted} />
             </View>
         );
     };

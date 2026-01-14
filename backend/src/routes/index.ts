@@ -5,6 +5,7 @@ import { taskRoutes } from './tasks';
 import { userRoutes } from './users';
 import { integrationRoutes } from './integrations';
 import { webhookRoutes } from './webhooks';
+import { homescreenRoutes } from './homescreen';
 
 export async function registerRoutes(fastify: FastifyInstance) {
     // Health check (no auth required)
@@ -13,6 +14,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
     });
 
     // API routes
+    await fastify.register(homescreenRoutes, { prefix: '/api/homescreen' });
     await fastify.register(feedRoutes, { prefix: '/api/feed' });
     await fastify.register(candidateRoutes, { prefix: '/api/candidates' });
     await fastify.register(taskRoutes, { prefix: '/api/tasks' });
@@ -20,3 +22,4 @@ export async function registerRoutes(fastify: FastifyInstance) {
     await fastify.register(integrationRoutes, { prefix: '/api/integrations' });
     await fastify.register(webhookRoutes, { prefix: '/api/webhooks' });
 }
+

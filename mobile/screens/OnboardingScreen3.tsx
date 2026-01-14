@@ -73,9 +73,8 @@ export default function OnboardingScreen3({ onNext }: OnboardingScreen3Props) {
             </View>
 
             <View style={styles.content}>
-                <Text style={styles.heading}>Designed around</Text>
-                <Text style={styles.heading}>your student</Text>
-                <Text style={styles.heading}>activities</Text>
+                <Text style={styles.heading}>Designed for your</Text>
+                <Text style={styles.heading}>student lifestyle</Text>
             </View>
 
             <TouchableOpacity style={styles.button} onPress={onNext} activeOpacity={0.8}>

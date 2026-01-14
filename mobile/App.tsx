@@ -2,7 +2,8 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './theme/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import FeedScreen from './screens/FeedScreen';
+import { QueryProvider } from './contexts/QueryProvider';
+import HomeScreen from './screens/HomeScreen';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useEffect } from 'react';
 
@@ -39,10 +40,10 @@ function AppNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
-        // Authenticated stack
+        // Authenticated stack - HomeScreen is the main screen
         <Stack.Screen
-          name="Feed"
-          component={FeedScreen}
+          name="Home"
+          component={HomeScreen}
           options={{ animation: 'fade' }}
         />
       ) : (
@@ -81,12 +82,14 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <ThemeProvider>
-          <NavigationContainer>
-            <AppNavigator />
-          </NavigationContainer>
-          <StatusBar style="auto" />
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider>
+            <NavigationContainer>
+              <AppNavigator />
+            </NavigationContainer>
+            <StatusBar style="auto" />
+          </ThemeProvider>
+        </QueryProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );
@@ -100,3 +103,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
 });
+
