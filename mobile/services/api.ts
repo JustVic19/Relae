@@ -21,7 +21,7 @@ async function getAuthToken(): Promise<string | null> {
 /**
  * Make authenticated API request
  */
-async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = await getAuthToken();
 
     const headers: Record<string, string> = {
@@ -44,6 +44,31 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
     }
 
     return response.json();
+}
+
+/**
+ * Save Expo Push Token
+ */
+export async function savePushToken(token: string): Promise<void> {
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/notifications/push-token`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${await getAuthToken()}`,
+            },
+            body: JSON.stringify({ token, platform: 'expo' }),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error(`Failed to save push token: ${response.status} ${text}`);
+        } else {
+            console.log('Push token saved successfully');
+        }
+    } catch (error) {
+        console.error('Error in savePushToken:', error);
+    }
 }
 
 // ===== FEED API =====
@@ -185,5 +210,54 @@ export async function updateUserProfile(updates: {
     return apiRequest('/api/users/me', {
         method: 'PATCH',
         body: JSON.stringify(updates),
+    });
+}
+
+// ===== GROUP API =====
+
+export interface Group {
+    id: string;
+    name: string;
+    description?: string;
+    code: string;
+    created_at: string;
+    role: 'admin' | 'member';
+    member_count: number;
+}
+
+export interface GroupDetail extends Group {
+    members: any[];
+    tasks: any[];
+}
+
+export async function getUserGroups(): Promise<Group[]> {
+    return apiRequest('/api/groups');
+}
+
+export async function createGroup(data: { name: string; description?: string }): Promise<Group> {
+    return apiRequest('/api/groups', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function joinGroup(code: string): Promise<{ success: boolean; groupId: string }> {
+    return apiRequest('/api/groups/join', {
+        method: 'POST',
+        body: JSON.stringify({ code }),
+    });
+}
+
+export async function getGroupDetails(groupId: string): Promise<GroupDetail> {
+    return apiRequest(`/api/groups/${groupId}`);
+}
+
+export async function createGroupTask(
+    groupId: string,
+    task: { title: string; due_date?: string; assigned_to?: string }
+): Promise<Task> {
+    return apiRequest(`/api/groups/${groupId}/tasks`, {
+        method: 'POST',
+        body: JSON.stringify(task),
     });
 }

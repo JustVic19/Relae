@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Analytics } from '../services/analytics';
 
 export default function LoginScreen({ navigation }: { navigation: any }) {
     const { signIn, signInWithGoogle, signInWithApple, loading } = useAuth();
@@ -26,6 +28,12 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
             // Save remember me preference
             if (rememberMe) {
                 await AsyncStorage.setItem('hasLoggedIn', 'true');
+            }
+
+            // Track Success
+            if (result.user?.id) {
+                Analytics.identifyUser(result.user.id, { email });
+                Analytics.logEvent(Analytics.Events.LOGIN_SUCCESS, { method: 'email' });
             }
         }
         // If successful, user will automatically be redirected to Feed screen
@@ -75,11 +83,7 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
                                     onPress={handleGoogleSignIn}
                                     disabled={loading}
                                 >
-                                    <Image
-                                        source={require('../assets/google-logo.png')}
-                                        style={styles.socialLogo}
-                                        resizeMode="contain"
-                                    />
+                                    <Ionicons name="logo-google" size={24} color="#DB4437" style={styles.socialIcon} />
                                     <Text style={styles.socialButtonText}>Google</Text>
                                 </TouchableOpacity>
 
@@ -88,11 +92,7 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
                                     onPress={handleAppleSignIn}
                                     disabled={loading}
                                 >
-                                    <Image
-                                        source={require('../assets/apple-logo.png')}
-                                        style={styles.socialLogo}
-                                        resizeMode="contain"
-                                    />
+                                    <Ionicons name="logo-apple" size={24} color="#FFF" style={styles.socialIcon} />
                                     <Text style={styles.socialButtonText}>Apple</Text>
                                 </TouchableOpacity>
                             </View>
@@ -232,9 +232,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 8,
     },
-    socialLogo: {
-        width: 20,
-        height: 20,
+    socialIcon: {
+        marginRight: 4,
     },
     socialButtonText: {
         color: '#FFFFFF',

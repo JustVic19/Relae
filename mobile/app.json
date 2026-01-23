@@ -9,21 +9,25 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash-v3.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.relaeai.app",
       "associatedDomains": [
         "applinks:kikaavafovalupmhzmpc.supabase.co"
-      ]
+      ],
+      "infoPlist": {
+        "NSCalendarsUsageDescription": "Relae needs access to your calendar to sync your schedule and prevent conflicts.",
+        "NSRemindersUsageDescription": "Relae needs access to your reminders to import your tasks."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#000000"
       },
       "package": "com.relaeai.app",
       "edgeToEdgeEnabled": true,
@@ -31,6 +35,16 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "910f1f8d-c1c7-4cec-9dbb-afdd69fde272"
+      }
+    },
+    "owner": "justvic20",
+    "plugins": [
+      "@react-native-community/datetimepicker",
+      "@sentry/react-native"
+    ]
   }
 }

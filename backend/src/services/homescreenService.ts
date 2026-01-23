@@ -28,6 +28,7 @@ export interface HomescreenData {
     user: UserHomescreenProfile;
     todaysTasks: Task[];
     weekTasks: Task[];
+    completedTasks: Task[];
     tasksByDate: TasksByDate;
     progress: ProgressStats;
 }
@@ -57,6 +58,9 @@ export class HomescreenService {
     /**
      * Get tasks for a specific date
      */
+    /**
+     * Get tasks for a specific date
+     */
     async getTasksForDate(userId: string, date: Date): Promise<Task[]> {
         const startOfDay = new Date(date);
         startOfDay.setHours(0, 0, 0, 0);
@@ -67,7 +71,7 @@ export class HomescreenService {
         const { data, error } = await supabaseAdmin
             .from('tasks')
             .select('*')
-            .eq('user_id', userId)
+            .or(`user_id.eq.${userId},assigned_to.eq.${userId}`)
             .gte('due_date', startOfDay.toISOString())
             .lte('due_date', endOfDay.toISOString())
             .order('sort_order', { ascending: true })
@@ -94,7 +98,7 @@ export class HomescreenService {
         const { data, error } = await supabaseAdmin
             .from('tasks')
             .select('*')
-            .eq('user_id', userId)
+            .or(`user_id.eq.${userId},assigned_to.eq.${userId}`)
             .gte('due_date', startOfStart.toISOString())
             .lte('due_date', endDate.toISOString())
             .order('sort_order', { ascending: true })
@@ -145,7 +149,7 @@ export class HomescreenService {
         const { data, error } = await supabaseAdmin
             .from('tasks')
             .select('*')
-            .eq('user_id', userId)
+            .or(`user_id.eq.${userId},assigned_to.eq.${userId}`)
             .gte('due_date', monday.toISOString())
             .lte('due_date', sunday.toISOString());
 
@@ -153,6 +157,27 @@ export class HomescreenService {
             throw new Error(`Failed to fetch week tasks: ${error.message}`);
         }
 
+        return data || [];
+    }
+
+    /**
+     * Get completed tasks (all, up to 100)
+     */
+    async getCompletedTasks(userId: string): Promise<Task[]> {
+        const { data, error } = await supabaseAdmin
+            .from('tasks')
+            .select('*')
+            .or(`user_id.eq.${userId},assigned_to.eq.${userId}`)
+            .eq('status', 'completed')
+            .order('completed_at', { ascending: false, nullsFirst: false })
+
+            .limit(100);
+
+        if (error) {
+            throw new Error(`Failed to fetch completed tasks: ${error.message}`);
+        }
+
+        console.log(`✅ Found ${data?.length || 0} completed tasks`);
         return data || [];
     }
 
@@ -186,10 +211,11 @@ export class HomescreenService {
     async getHomescreenData(userId: string): Promise<HomescreenData> {
         const today = new Date();
 
-        const [user, todaysTasks, weekTasks, tasksByDate] = await Promise.all([
+        const [user, todaysTasks, weekTasks, completedTasks, tasksByDate] = await Promise.all([
             this.getUserHomescreenProfile(userId),
             this.getTasksForDate(userId, today),
             this.getWeekTasks(userId),
+            this.getCompletedTasks(userId),
             this.getTasksForDateRange(userId, today, 5),
         ]);
 
@@ -199,6 +225,7 @@ export class HomescreenService {
             user,
             todaysTasks,
             weekTasks,
+            completedTasks,
             tasksByDate,
             progress,
         };

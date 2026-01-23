@@ -1,67 +1,60 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View, Animated, Dimensions } from 'react-native';
+import { StyleSheet, View, Animated, Image } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
-const { width, height } = Dimensions.get('window');
-const maxDimension = Math.max(width, height) * 2;
+const { width, height } = require('react-native').Dimensions.get('window');
 
 interface SplashScreenProps {
     onFinish: () => void;
 }
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
-    const rotation = useRef(new Animated.Value(0)).current;
     const dotScale = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        Animated.sequence([
-            // 1. Initial pause - let user see the logo
-            Animated.delay(1300),
-            // 2. Rotate logo 45°
-            Animated.timing(rotation, {
-                toValue: 1,
-                duration: 600,
-                useNativeDriver: true,
-            }),
-            // 3. Brief pause
-            Animated.delay(300),
-            // 4. Expand dot from center to fill screen
+        const sequence = Animated.sequence([
+            // Initial pause showing just the icon
+            Animated.delay(1500),
+
+            // Expand black dot to fill screen
             Animated.timing(dotScale, {
                 toValue: 1,
                 duration: 800,
                 useNativeDriver: true,
             }),
-        ]).start(() => {
+        ]);
+
+        sequence.start(() => {
             onFinish();
         });
-    }, [onFinish, rotation, dotScale]);
+    }, []);
 
-    const rotateInterpolate = rotation.interpolate({
+    // Calculate scale needed to cover entire screen
+    const screenDiagonal = Math.sqrt(width * width + height * height);
+    const finalScale = screenDiagonal / 10; // Start from 10px dot
+
+    const dotScaleInterpolated = dotScale.interpolate({
         inputRange: [0, 1],
-        outputRange: ['0deg', '45deg'],
+        outputRange: [0, finalScale],
     });
 
     return (
         <View style={styles.container}>
             <StatusBar style="dark" />
 
-            <Animated.Image
-                source={require('../assets/logo-black.png')}
-                style={[
-                    styles.logo,
-                    {
-                        transform: [{ rotate: rotateInterpolate }],
-                    },
-                ]}
+            {/* Icon centered */}
+            <Image
+                source={require('../assets/icon-only.png')}
+                style={styles.icon}
                 resizeMode="contain"
             />
 
             {/* Expanding black dot */}
             <Animated.View
                 style={[
-                    styles.dot,
+                    styles.blackDot,
                     {
-                        transform: [{ scale: dotScale }],
+                        transform: [{ scale: dotScaleInterpolated }],
                     },
                 ]}
             />
@@ -72,19 +65,21 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAF4F0',
+        backgroundColor: '#FFFFFF',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    logo: {
-        width: 180,
-        height: 180,
+    icon: {
+        width: 150,
+        height: 150,
     },
-    dot: {
+    blackDot: {
         position: 'absolute',
-        width: maxDimension,
-        height: maxDimension,
-        borderRadius: maxDimension / 2,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
         backgroundColor: '#000000',
+        top: height / 2 - 5,
+        left: width / 2 - 5,
     },
 });

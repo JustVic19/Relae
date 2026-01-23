@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import { env } from './config/env';
 import { registerRoutes } from './routes';
 import { errorHandler } from './middleware/errorHandler';
+import { initializeNotificationJobs } from './jobs/notificationJobs';
 
 const fastify = Fastify({
     logger: {
@@ -38,6 +39,9 @@ async function start() {
         // Register routes
         await registerRoutes(fastify);
 
+        // Initialize cron jobs for notifications
+        initializeNotificationJobs();
+
         // Start server
         await fastify.listen({
             port: parseInt(env.PORT),
@@ -46,7 +50,7 @@ async function start() {
 
         console.log(`
     ╔═══════════════════════════════════════╗
-    ║   StudentOS API Server Started 🚀    ║
+    ║      Relae API Server Started 🚀     ║
     ╠═══════════════════════════════════════╣
     ║  Environment: ${env.NODE_ENV.padEnd(23)} ║
     ║  Port: ${env.PORT.padEnd(30)} ║

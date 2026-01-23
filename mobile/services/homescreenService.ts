@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabase';
 
 // Types matching backend
 export type TaskType = 'DEADLINE' | 'READING' | 'ADMIN' | 'CHANGE' | 'EVENT';
-export type TaskStatus = 'pending' | 'completed' | 'cancelled';
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
 
 export interface Task {
     id: string;
@@ -48,6 +48,7 @@ export interface HomescreenData {
     user: UserHomescreenProfile;
     todaysTasks: Task[];
     weekTasks: Task[];
+    completedTasks: Task[];
     tasksByDate: TasksByDate;
     progress: ProgressStats;
 }
@@ -85,6 +86,7 @@ class HomescreenService {
 
     /**
      * Fetch tasks for a specific date
+     * For the homescreen, we show all upcoming tasks (today and future)
      */
     async getTasksForDate(date: Date): Promise<Task[]> {
         const { data: { user } } = await supabase.auth.getUser();
@@ -93,17 +95,14 @@ class HomescreenService {
         const startOfDay = new Date(date);
         startOfDay.setHours(0, 0, 0, 0);
 
-        const endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
-
         const { data, error } = await supabase
             .from('tasks')
             .select('*')
             .eq('user_id', user.id)
-            .gte('due_date', startOfDay.toISOString())
-            .lte('due_date', endOfDay.toISOString())
-            .order('sort_order', { ascending: true })
-            .order('due_date', { ascending: true });
+            .in('status', ['pending', 'in_progress']) // Show pending and in_progress tasks
+            .gte('due_date', startOfDay.toISOString()) // Tasks from today onwards
+            .order('due_date', { ascending: true })
+            .order('sort_order', { ascending: true });
 
         if (error) throw new Error(error.message);
         return data || [];
@@ -134,6 +133,28 @@ class HomescreenService {
             .eq('user_id', user.id)
             .gte('due_date', monday.toISOString())
             .lte('due_date', sunday.toISOString());
+
+        if (error) throw new Error(error.message);
+        return data || [];
+    }
+
+    /**
+     * Fetch recently completed tasks (last 7 days)
+     */
+    async getCompletedTasks(): Promise<Task[]> {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const { data, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'completed')
+            .gte('completed_at', sevenDaysAgo.toISOString())
+            .order('completed_at', { ascending: false });
 
         if (error) throw new Error(error.message);
         return data || [];
@@ -215,10 +236,11 @@ class HomescreenService {
     async getHomescreenData(): Promise<HomescreenData> {
         const today = new Date();
 
-        const [user, todaysTasks, weekTasks, tasksByDate] = await Promise.all([
+        const [user, todaysTasks, weekTasks, completedTasks, tasksByDate] = await Promise.all([
             this.getUserProfile(),
             this.getTasksForDate(today),
             this.getWeekTasks(),
+            this.getCompletedTasks(),
             this.getTasksForDateRange(today, 5),
         ]);
 
@@ -228,6 +250,7 @@ class HomescreenService {
             user,
             todaysTasks,
             weekTasks,
+            completedTasks,
             tasksByDate,
             progress,
         };
@@ -291,6 +314,25 @@ class HomescreenService {
             .eq('user_id', user.id);
 
         if (error) throw new Error(error.message);
+    }
+
+    /**
+     * Update a task
+     */
+    async updateTask(taskId: string, updates: Partial<Task>): Promise<Task> {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const { data, error } = await supabase
+            .from('tasks')
+            .update(updates)
+            .eq('id', taskId)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+        return data;
     }
 
     /**

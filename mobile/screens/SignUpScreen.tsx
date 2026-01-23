@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function SignUpScreen({ navigation }: { navigation: any }) {
@@ -92,11 +93,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
                                     onPress={handleGoogleSignUp}
                                     disabled={loading}
                                 >
-                                    <Image
-                                        source={require('../assets/google-logo.png')}
-                                        style={styles.socialLogo}
-                                        resizeMode="contain"
-                                    />
+                                    <Ionicons name="logo-google" size={24} color="#DB4437" style={styles.socialIcon} />
                                     <Text style={styles.socialButtonText}>Google</Text>
                                 </TouchableOpacity>
 
@@ -105,11 +102,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
                                     onPress={handleAppleSignUp}
                                     disabled={loading}
                                 >
-                                    <Image
-                                        source={require('../assets/apple-logo.png')}
-                                        style={styles.socialLogo}
-                                        resizeMode="contain"
-                                    />
+                                    <Ionicons name="logo-apple" size={24} color="#FFF" style={styles.socialIcon} />
                                     <Text style={styles.socialButtonText}>Apple</Text>
                                 </TouchableOpacity>
                             </View>
@@ -245,6 +238,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
+    },
+    socialIcon: {
+        marginRight: 4,
     },
     socialLogo: {
         width: 20,

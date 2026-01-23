@@ -1,0 +1,17 @@
+appId: com.relaeai.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Log In"
+    timeout: 10000
+- tapOn: "Log In"
+- assertVisible: "Hi There!"
+- tapOn: "Email address"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "password123"
+- hideKeyboard
+- tapOn: "Log In" 
+# Expect failure or success depending on real backend, but for flow test we check UI reaction
+# If real user, we'd mock or have test user. 
+# For now, just submitting form is a pass for "flow exists"

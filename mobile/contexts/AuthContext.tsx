@@ -14,7 +14,7 @@ interface AuthContextType {
     loading: boolean;
     initializing: boolean;
     signUp: (email: string, password: string) => Promise<{ error: string | null }>;
-    signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+    signIn: (email: string, password: string) => Promise<{ error: string | null; user?: User | null }>;
     signInWithGoogle: () => Promise<{ error: string | null }>;
     signInWithApple: () => Promise<{ error: string | null }>;
     signOut: () => Promise<void>;
@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const signIn = async (email: string, password: string) => {
         setLoading(true);
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return { error: getErrorMessage(error) };
             }
 
-            return { error: null };
+            return { error: null, user: data.user };
         } catch (error) {
             return { error: getErrorMessage(error as Error) };
         } finally {

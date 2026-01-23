@@ -192,7 +192,57 @@ export class TaskService {
             throw new Error(`Failed to complete task: ${error.message}`);
         }
 
+        // Track weekly completion stats (fire and forget)
+        this.updateWeeklyStats(userId).catch(err => {
+            console.error('Failed to update weekly stats:', err);
+        });
+
+        // Generate notifications for achievements (fire and forget)
+        this.generateCompletionNotifications(userId, taskId).catch(err => {
+            console.error('Failed to generate completion notifications:', err);
+        });
+
         return data;
+    }
+
+    /**
+     * Private helper to update weekly stats
+     */
+    private async updateWeeklyStats(userId: string): Promise<void> {
+        // Import here to avoid circular dependency
+        const { PreferencesService } = await import('./preferencesService');
+        const preferencesService = new PreferencesService(supabaseAdmin);
+        await preferencesService.incrementWeeklyCompletion(userId);
+    }
+
+    /**
+     * Private helper to generate notifications on task completion
+     */
+    private async generateCompletionNotifications(userId: string, taskId: string): Promise<void> {
+        const { NotificationService } = await import('./notificationService');
+        const { PreferencesService } = await import('./preferencesService');
+
+        const notificationService = new NotificationService(supabaseAdmin);
+        const preferencesService = new PreferencesService(supabaseAdmin);
+
+        // Check if weekly goal achieved
+        const currentWeek = await preferencesService.getCurrentWeekStats(userId);
+        const preferences = await preferencesService.getPreferences(userId);
+
+        if (currentWeek && preferences.weekly_goal && currentWeek.completed === preferences.weekly_goal) {
+            await notificationService.notifyGoalAchieved(userId, preferences.weekly_goal);
+        }
+
+        // Check for task completion milestones
+        const { count } = await supabaseAdmin
+            .from('tasks')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('status', 'completed');
+
+        if (count) {
+            await notificationService.notifyTaskMilestone(userId, count);
+        }
     }
 
     /**

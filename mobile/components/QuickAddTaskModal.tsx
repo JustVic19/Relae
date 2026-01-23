@@ -9,6 +9,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    Alert,
 } from 'react-native';
 import { TaskType } from '../services/homescreenService';
 
@@ -16,6 +17,7 @@ interface QuickAddTaskModalProps {
     visible: boolean;
     onClose: () => void;
     onSubmit: (title: string, type: TaskType, dueDate?: string, module?: string) => void;
+    initialDate?: Date;
 }
 
 const TASK_TYPES: { value: TaskType; label: string; emoji: string; color: string }[] = [
@@ -26,19 +28,68 @@ const TASK_TYPES: { value: TaskType; label: string; emoji: string; color: string
     { value: 'CHANGE', label: 'Change', emoji: '🔄', color: '#F59E0B' },
 ];
 
-export default function QuickAddTaskModal({ visible, onClose, onSubmit }: QuickAddTaskModalProps) {
+export default function QuickAddTaskModal({ visible, onClose, onSubmit, initialDate }: QuickAddTaskModalProps) {
     const [title, setTitle] = useState('');
     const [selectedType, setSelectedType] = useState<TaskType>('DEADLINE');
     const [module, setModule] = useState('');
-    const [dueDate, setDueDate] = useState('');
+    const [dueDate, setDueDate] = useState(
+        initialDate ? initialDate.toISOString().split('T')[0] : ''
+    );
+    const [dueTime, setDueTime] = useState('');
+
+    // Update due date when initialDate changes or modal opens
+    React.useEffect(() => {
+        if (visible && initialDate) {
+            setDueDate(initialDate.toISOString().split('T')[0]);
+        }
+    }, [visible, initialDate]);
 
     const handleSubmit = () => {
         if (!title.trim()) return;
 
+        // Parse and validate due date if provided
+        let formattedDueDate = dueDate || undefined;
+        if (dueDate) {
+            try {
+                // Try to parse various date formats
+                let parsedDate;
+
+                // Check if already in YYYY-MM-DD format
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+                    parsedDate = new Date(dueDate);
+                }
+                // Check for DD/MM/YYYY format
+                else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dueDate)) {
+                    const [day, month, year] = dueDate.split('/');
+                    parsedDate = new Date(`${year}-${month}-${day}`);
+                }
+                // Check for MM/DD/YYYY format
+                else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dueDate)) {
+                    parsedDate = new Date(dueDate);
+                }
+                // Try generic parse
+                else {
+                    parsedDate = new Date(dueDate);
+                }
+
+                // Validate the date
+                if (isNaN(parsedDate.getTime())) {
+                    Alert.alert('Invalid Date', 'Please enter a valid date in YYYY-MM-DD format');
+                    return;
+                }
+
+                // Convert to YYYY-MM-DD format for PostgreSQL
+                formattedDueDate = parsedDate.toISOString().split('T')[0];
+            } catch (error) {
+                Alert.alert('Invalid Date', 'Please enter a valid date in YYYY-MM-DD format');
+                return;
+            }
+        }
+
         onSubmit(
             title.trim(),
             selectedType,
-            dueDate || undefined,
+            formattedDueDate,
             module || undefined
         );
 
@@ -55,7 +106,8 @@ export default function QuickAddTaskModal({ visible, onClose, onSubmit }: QuickA
         setTitle('');
         setSelectedType('DEADLINE');
         setModule('');
-        setDueDate('');
+        setDueDate(initialDate ? initialDate.toISOString().split('T')[0] : '');
+        setDueTime('');
         onClose();
     };
 
@@ -145,10 +197,22 @@ export default function QuickAddTaskModal({ visible, onClose, onSubmit }: QuickA
                         <Text style={styles.label}>Due Date (Optional)</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="YYYY-MM-DD or use date picker"
+                            placeholder="DD/MM/YYYY or YYYY-MM-DD"
                             placeholderTextColor="#9BA0A8"
                             value={dueDate}
                             onChangeText={setDueDate}
+                            returnKeyType="next"
+                        />
+
+                        {/* Due Time Input */}
+                        <Text style={styles.label}>Due Time (Optional)</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="HH:MM (e.g., 14:30)"
+                            placeholderTextColor="#9BA0A8"
+                            value={dueTime}
+                            onChangeText={setDueTime}
+                            keyboardType="numbers-and-punctuation"
                             returnKeyType="done"
                             onSubmitEditing={handleSubmit}
                         />

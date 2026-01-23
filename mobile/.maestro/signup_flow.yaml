@@ -1,0 +1,17 @@
+appId: com.relaeai.app
+---
+- launchApp
+- tapOn: "Sign Up" # From Login screen probably, or Initial Screen
+# If we start at Onboarding, we might need to navigate
+- assertVisible: "Create An Account"
+- tapOn: "Email address"
+- inputText: "user-${UUID}@example.com"
+- hideKeyboard
+- tapOn: "Continue"
+- assertVisible: "Password"
+- tapOn: "Password"
+- inputText: "password123"
+- hideKeyboard
+- tapOn: "Create Account"
+# Assert Success (Feed)
+- assertVisible: "Feed"

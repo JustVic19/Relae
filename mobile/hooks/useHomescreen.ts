@@ -65,29 +65,50 @@ export function useTaskMutations() {
         onSuccess: invalidateAll,
         // Optimistic update for instant UI feedback
         onMutate: async (taskId: string) => {
+            console.log('🔄 [Mutate] Starting optimistic update for task:', taskId);
             // Cancel any outgoing refetches
             await queryClient.cancelQueries({ queryKey: homescreenKeys.data() });
 
             // Snapshot the previous value
             const previousData = queryClient.getQueryData<HomescreenData>(homescreenKeys.data());
+            console.log('🔄 [Mutate] Previous data exists?', !!previousData);
+            if (previousData) {
+                console.log('🔄 [Mutate] Previous completed tasks count:', previousData.completedTasks?.length ?? 0);
+            }
 
             // Optimistically update the cache
             if (previousData) {
+                // Find the task being completed
+                const taskBeingCompleted = previousData.todaysTasks?.find(t => t.id === taskId) ||
+                    previousData.weekTasks?.find(t => t.id === taskId);
+
+                console.log('🔄 [Mutate] Found task to complete?', !!taskBeingCompleted);
+
                 const updateTask = (task: Task): Task =>
                     task.id === taskId
                         ? { ...task, status: 'completed' as const, completed_at: new Date().toISOString() }
                         : task;
 
+                // Add completed task to completedTasks array
+                const currentCompletedTasks = previousData.completedTasks || [];
+                const updatedCompletedTasks = taskBeingCompleted
+                    ? [{ ...taskBeingCompleted, status: 'completed' as const, completed_at: new Date().toISOString() }, ...currentCompletedTasks]
+                    : currentCompletedTasks;
+
+                console.log('🔄 [Mutate] New completed tasks count:', updatedCompletedTasks.length);
+
                 queryClient.setQueryData<HomescreenData>(homescreenKeys.data(), {
                     ...previousData,
                     todaysTasks: previousData.todaysTasks.map(updateTask),
                     weekTasks: previousData.weekTasks.map(updateTask),
+                    completedTasks: updatedCompletedTasks,
                     progress: homescreenService.calculateProgress(
                         previousData.todaysTasks.map(updateTask),
                         previousData.weekTasks.map(updateTask)
                     ),
                 });
             }
+
 
             return { previousData };
         },
@@ -164,6 +185,18 @@ export function useTaskMutations() {
 
     const createTask = useMutation({
         mutationFn: (input: CreateTaskInput) => homescreenService.createQuickTask(input),
+        onSuccess: () => {
+            console.log('✅ Task created successfully, invalidating queries...');
+            invalidateAll();
+        },
+        onError: (error: Error) => {
+            console.error('❌ Error creating task:', error.message);
+        },
+    });
+
+    const updateTask = useMutation({
+        mutationFn: ({ taskId, updates }: { taskId: string; updates: Partial<Task> }) =>
+            homescreenService.updateTask(taskId, updates),
         onSuccess: invalidateAll,
     });
 
@@ -177,6 +210,7 @@ export function useTaskMutations() {
         uncompleteTask,
         deleteTask,
         createTask,
+        updateTask,
         reorderTasks,
     };
 }

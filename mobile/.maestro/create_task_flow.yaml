@@ -1,0 +1,12 @@
+appId: com.relaeai.app
+---
+- launchApp
+- runFlow:
+    file: login_flow.yaml
+- tapOn: "+"
+- assertVisible: "Quick Add Task"
+- tapOn: "What needs to be done?"
+- inputText: "Maestro Test Task"
+- hideKeyboard
+- tapOn: "Add Task"
+- assertVisible: "Maestro Test Task"
