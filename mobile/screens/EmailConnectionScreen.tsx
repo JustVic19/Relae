@@ -413,6 +413,9 @@ const styles = StyleSheet.create({
         fontFamily: 'SpaceGrotesk-Regular',
         color: '#666',
     },
+    connectedStatus: {
+        marginLeft: 12,
+    },
     hero: {
         alignItems: 'center',
         paddingVertical: 40,
@@ -455,6 +458,9 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         borderWidth: 2,
         borderColor: 'transparent',
+    },
+    providerCardApple: {
+        marginBottom: 30,
     },
     providerCardConnected: {
         borderColor: '#12B76A',

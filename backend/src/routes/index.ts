@@ -4,7 +4,7 @@ import { candidateRoutes } from './candidates';
 import { taskRoutes } from './tasks';
 import { userRoutes } from './users';
 import { integrationRoutes } from './integrations';
-import { webhookRoutes } from './webhooks';
+import { webhookRoutes } from './webhook';
 import { homescreenRoutes } from './homescreen';
 import { preferencesRoutes } from './preferences';
 import { notificationRoutes } from './notifications';

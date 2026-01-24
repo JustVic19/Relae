@@ -12,7 +12,10 @@ import {
     Image,
 } from 'react-native';
 import { useProfile, useProfileMutations, useUserStats, useAchievements } from '../hooks/useProfile';
+import { useAuth } from '../contexts/AuthContext';
 import NotificationModal from './NotificationModal';
+import PremiumBanner from './PremiumBanner';
+import PaywallModal from './PaywallModal';
 import { pickImage } from '../services/profileService';
 
 interface ProfileModalProps {
@@ -44,11 +47,13 @@ export default function ProfileModal({ visible, onClose, onEmailSetup }: Profile
     const { achievements, isLoading: achievementsLoading } = useAchievements();
     const { updateDisplayName, updateAvatar, uploadImage, logout, isUpdating, isLoggingOut } = useProfileMutations();
 
+    const { isPro } = useAuth();
     const [activeTab, setActiveTab] = useState<Tab>('info');
     const [editingName, setEditingName] = useState(false);
     const [tempName, setTempName] = useState('');
     const [showAvatarPicker, setShowAvatarPicker] = useState(false);
     const [showNotificationModal, setShowNotificationModal] = useState(false);
+    const [showPaywall, setShowPaywall] = useState(false);
 
     const handleSaveName = () => {
         if (tempName.trim()) {
@@ -192,6 +197,15 @@ export default function ProfileModal({ visible, onClose, onEmailSetup }: Profile
                                     <Text style={styles.avatarEditIcon}>✏️</Text>
                                 </View>
                             </TouchableOpacity>
+
+                            {/* PREMIUM BANNER - Only show if not pro */}
+                            {!isPro && (
+                                <PremiumBanner
+                                    onPress={() => setShowPaywall(true)}
+                                    compact
+                                    style={{ marginBottom: 24 }}
+                                />
+                            )}
 
                             {/* Display Name */}
                             <View style={styles.field}>
@@ -466,10 +480,14 @@ export default function ProfileModal({ visible, onClose, onEmailSetup }: Profile
                     </View>
                 </Modal>
 
-                {/* Notification Settings Modal */}
                 <NotificationModal
                     visible={showNotificationModal}
                     onClose={() => setShowNotificationModal(false)}
+                />
+
+                <PaywallModal
+                    visible={showPaywall}
+                    onClose={() => setShowPaywall(false)}
                 />
             </View>
         </Modal>

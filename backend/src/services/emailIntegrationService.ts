@@ -338,7 +338,7 @@ export class EmailIntegrationService {
             if (contentItems.length === 0) return;
 
             // 4. Extract Tasks
-            const candidates = await intelligenceService.extractTasks(contentItems);
+            const candidates = await intelligenceService.extractTasks(contentItems, integration.user_id);
             console.log(`[Sync] Extracted ${candidates.length} task candidates`);
 
             // 5. Save Tasks to Database

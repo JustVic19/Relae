@@ -48,11 +48,9 @@ export async function emailRoutes(fastify: FastifyInstance) {
      * GET /api/email/callback/google
      * Handle Google OAuth callback
      */
-    fastify.get('/callback/google', async (request: FastifyRequest<{
-        Querystring: { code?: string; state?: string };
-    }>, reply: FastifyReply) => {
+    fastify.get('/callback/google', async (request: FastifyRequest, reply: FastifyReply) => {
         try {
-            const { code, state } = request.query;
+            const { code, state } = request.query as { code?: string; state?: string };
 
             if (!code) {
                 return reply.code(400).send({ error: 'Missing authorization code' });
@@ -80,11 +78,9 @@ export async function emailRoutes(fastify: FastifyInstance) {
      * GET /api/email/callback/microsoft
      * Handle Microsoft OAuth callback
      */
-    fastify.get('/callback/microsoft', async (request: FastifyRequest<{
-        Querystring: { code?: string; state?: string };
-    }>, reply: FastifyReply) => {
+    fastify.get('/callback/microsoft', async (request: FastifyRequest, reply: FastifyReply) => {
         try {
-            const { code, state } = request.query;
+            const { code, state } = request.query as { code?: string; state?: string };
 
             if (!code) {
                 return reply.code(400).send({ error: 'Missing authorization code' });
@@ -145,16 +141,15 @@ export async function emailRoutes(fastify: FastifyInstance) {
      */
     fastify.delete('/integrations/:id', {
         preHandler: authMiddleware
-    }, async (request: FastifyRequest<{
-        Params: { id: string };
-    }>, reply: FastifyReply) => {
+    }, async (request: FastifyRequest, reply: FastifyReply) => {
         try {
             const userId = request.user?.id;
             if (!userId) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
-            const integrationId = request.params.id;
+            const { id } = request.params as { id: string };
+            const integrationId = id;
             await emailIntegrationService.disconnectIntegration(integrationId, userId);
 
             reply.send({ success: true });
@@ -170,18 +165,16 @@ export async function emailRoutes(fastify: FastifyInstance) {
      */
     fastify.patch('/integrations/:id/toggle', {
         preHandler: authMiddleware
-    }, async (request: FastifyRequest<{
-        Params: { id: string };
-        Body: { enabled: boolean };
-    }>, reply: FastifyReply) => {
+    }, async (request: FastifyRequest, reply: FastifyReply) => {
         try {
             const userId = request.user?.id;
             if (!userId) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
-            const integrationId = request.params.id;
-            const { enabled } = request.body;
+            const { id } = request.params as { id: string };
+            const integrationId = id;
+            const { enabled } = request.body as { enabled: boolean };
 
             if (typeof enabled !== 'boolean') {
                 return reply.code(400).send({ error: 'enabled must be a boolean' });
@@ -201,16 +194,14 @@ export async function emailRoutes(fastify: FastifyInstance) {
      */
     fastify.post('/sync/:integrationId', {
         preHandler: authMiddleware
-    }, async (request: FastifyRequest<{
-        Params: { integrationId: string };
-    }>, reply: FastifyReply) => {
+    }, async (request: FastifyRequest, reply: FastifyReply) => {
         try {
             const userId = request.user?.id;
             if (!userId) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
-            const integrationId = request.params.integrationId;
+            const { integrationId } = request.params as { integrationId: string };
 
             // Fetch recent emails
             const emails = await emailParserService.fetchGmailEmails(integrationId, 20);
@@ -219,7 +210,7 @@ export async function emailRoutes(fastify: FastifyInstance) {
 
             // Process each email with AI
             for (const email of emails) {
-                const extracted = await emailParserService.extractTaskFromEmail(email);
+                const extracted = await emailParserService.extractTaskFromEmail(email, userId);
 
                 if (extracted && extracted.confidenceScore >= 0.7) {
                     // Create task

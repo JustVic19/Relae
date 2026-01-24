@@ -8,7 +8,7 @@ export const Analytics = {
      */
     init: () => {
         if (AMPLITUDE_API_KEY) {
-            init(AMPLITUDE_API_KEY);
+            init(AMPLITUDE_API_KEY, undefined, { disableCookies: true });
         } else {
             console.log('⚠️ Amplitude API Key missing. Analytics disabled.');
         }

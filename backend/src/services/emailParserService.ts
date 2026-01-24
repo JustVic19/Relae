@@ -32,12 +32,19 @@ interface ExtractedTask {
  * Email Parser Service
  * Uses OpenAI GPT-4 to extract tasks from email content
  */
+import { usageService } from './usageService';
+
+// ... imports
+
 export class EmailParserService {
     /**
      * Extract structured task data from email using AI
      */
-    async extractTaskFromEmail(email: EmailMessage): Promise<ExtractedTask | null> {
+    async extractTaskFromEmail(email: EmailMessage, userId: string): Promise<ExtractedTask | null> {
         try {
+            // Check Limits
+            await usageService.checkAndIncrementAiUsage(userId);
+
             const prompt = this.buildExtractionPrompt(email);
 
             const response = await openai.chat.completions.create({

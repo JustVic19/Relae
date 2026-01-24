@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { ContentItem } from './googleService';
+import { usageService } from './usageService';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -16,8 +17,11 @@ export interface TaskCandidate {
 }
 
 class IntelligenceService {
-    async extractTasks(items: ContentItem[]): Promise<TaskCandidate[]> {
+    async extractTasks(items: ContentItem[], userId: string): Promise<TaskCandidate[]> {
         if (items.length === 0) return [];
+
+        // CHECK LIMITS BEFORE PROCESSING
+        await usageService.checkAndIncrementAiUsage(userId);
 
         // Process in batches if necessary, but for 20-40 items we might be able to do one big prompt
         // or a few parallel calls. Let's do one call per item for better accuracy, or batches of 5.

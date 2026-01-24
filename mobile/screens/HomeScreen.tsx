@@ -29,6 +29,8 @@ import NotificationModal from '../components/NotificationModal';
 import ProfileModal from '../components/ProfileModal';
 import EmailOnboardingWalkthrough from '../components/EmailOnboardingWalkthrough';
 import EmailConnectionScreen from '../screens/EmailConnectionScreen';
+import PremiumBanner from '../components/PremiumBanner';
+import PaywallModal from '../components/PaywallModal';
 import { TaskType, Task } from '../services/homescreenService';
 
 // Utility function to get countdown text
@@ -97,7 +99,7 @@ function HomescreenSkeleton() {
 
 export default function HomeScreen({ navigation }: any) {
     const insets = useSafeAreaInsets();
-    const { user } = useAuth();
+    const { user, isPro } = useAuth();
     const { data, isLoading, isError, error } = useHomescreenData();
     const refreshHomescreen = useRefreshHomescreen();
     const { createTask, completeTask, uncompleteTask, deleteTask, updateTask } = useTaskMutations();
@@ -112,7 +114,9 @@ export default function HomeScreen({ navigation }: any) {
     const [showQuickAddModal, setShowQuickAddModal] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [openMenuTaskId, setOpenMenuTaskId] = useState<string | null>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number, right: number } | null>(null);
     const [showAllDeadlines, setShowAllDeadlines] = useState(false);
+    const [showAllTasks, setShowAllTasks] = useState(false);
     const [showEditGoalModal, setShowEditGoalModal] = useState(false);
     const [showWeeklyBreakdown, setShowWeeklyBreakdown] = useState(false);
     const [urgencyFilter, setUrgencyFilter] = useState<'all' | 'urgent' | 'soon' | 'later'>('all');
@@ -120,6 +124,7 @@ export default function HomeScreen({ navigation }: any) {
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [showEmailOnboarding, setShowEmailOnboarding] = useState(false);
     const [showEmailConnection, setShowEmailConnection] = useState(false);
+    const [showPaywall, setShowPaywall] = useState(false);
 
     // Check if user should see email onboarding (only for first-time users with no emails)
     useEffect(() => {
@@ -144,6 +149,12 @@ export default function HomeScreen({ navigation }: any) {
     }, [refreshHomescreen, checkOverdueTasks]);
 
     const handleCreateTask = React.useCallback((title: string, type: TaskType, dueDate?: string, module?: string) => {
+        // CHECK LIMIT
+        if (!isPro && (data?.todaysTasks?.length || 0) >= DAILY_TASK_LIMIT) {
+            setShowPaywall(true);
+            return;
+        }
+
         const today = new Date();
         const taskDate = dueDate || today.toISOString();
 
@@ -197,6 +208,10 @@ export default function HomeScreen({ navigation }: any) {
     const pendingTasks = todaysTasks.filter(t => t.status === 'pending');
     const inProgressTasks = todaysTasks.filter(t => t.status === 'in_progress');
     const completedTasks = data?.completedTasks || [];
+
+    // FREE PLAN LIMIT
+    const DAILY_TASK_LIMIT = 5;
+    const isOverLimit = !isPro && (todaysTasks?.length || 0) >= DAILY_TASK_LIMIT;
 
     // DEBUG: Log completed tasks
     console.log('\ud83d\udc1b [HomeScreen] Completed tasks count:', completedTasks.length);
@@ -298,6 +313,13 @@ export default function HomeScreen({ navigation }: any) {
                         <Text style={styles.subtitle}>Welcome back</Text>
                     </View>
                     <View style={styles.headerRight}>
+                        {!isPro && (
+                            <TouchableOpacity activeOpacity={0.7} onPress={() => setShowPaywall(true)} style={{ marginRight: 8 }}>
+                                <View style={{ paddingHorizontal: 10, paddingVertical: 4, backgroundColor: '#EFF6FF', borderRadius: 8, borderWidth: 1, borderColor: '#BFDBFE' }}>
+                                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#3B82F6' }}>Pro</Text>
+                                </View>
+                            </TouchableOpacity>
+                        )}
                         <TouchableOpacity
                             style={styles.notificationButton}
                             onPress={() => setShowNotificationModal(true)}
@@ -354,6 +376,14 @@ export default function HomeScreen({ navigation }: any) {
                         <Text style={styles.connectionPromptText}>Connect your school email</Text>
                         <Text style={styles.connectionPromptArrow}>→</Text>
                     </TouchableOpacity>
+                )}
+
+                {/* Premium Banner */}
+                {!isPro && (
+                    <PremiumBanner
+                        onPress={() => setShowPaywall(true)}
+                        style={{ marginBottom: 24 }}
+                    />
                 )}
 
                 {/* Manage your task section */}
@@ -469,7 +499,7 @@ export default function HomeScreen({ navigation }: any) {
                             />
                         )}
 
-                        {displayedTasks.slice(0, 3).map((task) => {
+                        {displayedTasks.slice(0, showAllTasks ? undefined : 3).map((task) => {
                             const taskDate = task.due_date ? new Date(task.due_date) : new Date();
                             const taskDayNum = taskDate.getDate();
                             const taskDayName = taskDate.toLocaleDateString('en-US', { weekday: 'short' });
@@ -538,9 +568,16 @@ export default function HomeScreen({ navigation }: any) {
                                     renderLeftActions={renderLeftActions}
                                     overshootRight={false}
                                     overshootLeft={false}
+                                    containerStyle={{
+                                        zIndex: openMenuTaskId === task.id ? 1000 : 1,
+                                        elevation: openMenuTaskId === task.id ? 10 : 0
+                                    }}
                                 >
                                     <TouchableOpacity
-                                        style={styles.taskCard}
+                                        style={[
+                                            styles.taskCard,
+                                            openMenuTaskId === task.id && { zIndex: 1000 }
+                                        ]}
                                         onPress={() => {
                                             if (!openMenuTaskId) {
                                                 setSelectedTask(task);
@@ -570,62 +607,16 @@ export default function HomeScreen({ navigation }: any) {
                                                 style={styles.taskActionButton}
                                                 onPress={(e) => {
                                                     e.stopPropagation();
+                                                    // We subtract a bit to align with the button or just below it.
+                                                    const top = e.nativeEvent.pageY - insets.top;
+                                                    setMenuPosition({ top: top + 10, right: 20 });
                                                     setOpenMenuTaskId(openMenuTaskId === task.id ? null : task.id);
                                                 }}
                                             >
                                                 <Text style={styles.taskActionIcon}>⋯</Text>
                                             </TouchableOpacity>
 
-                                            {/* Context Menu */}
-                                            {openMenuTaskId === task.id && (
-                                                <View style={styles.contextMenu}>
-                                                    <TouchableOpacity
-                                                        style={styles.menuItem}
-                                                        onPress={() => {
-                                                            setOpenMenuTaskId(null);
-                                                            setSelectedTask(task);
-                                                        }}
-                                                    >
-                                                        <Text style={styles.menuItemText}>✏️ Edit</Text>
-                                                    </TouchableOpacity>
-
-                                                    <TouchableOpacity
-                                                        style={styles.menuItem}
-                                                        onPress={() => {
-                                                            const newStatus = task.status === 'pending' ? 'in_progress' : 'pending';
-                                                            updateTask.mutate({
-                                                                taskId: task.id,
-                                                                updates: { status: newStatus }
-                                                            });
-                                                            setOpenMenuTaskId(null);
-                                                        }}
-                                                    >
-                                                        <Text style={styles.menuItemText}>
-                                                            {task.status === 'pending' ? '🔄 Move to In Review' : '⬅️ Move to In Progress'}
-                                                        </Text>
-                                                    </TouchableOpacity>
-
-                                                    <TouchableOpacity
-                                                        style={styles.menuItem}
-                                                        onPress={() => {
-                                                            completeTask.mutate(task.id);
-                                                            setOpenMenuTaskId(null);
-                                                        }}
-                                                    >
-                                                        <Text style={styles.menuItemText}>✅ Complete</Text>
-                                                    </TouchableOpacity>
-
-                                                    <TouchableOpacity
-                                                        style={[styles.menuItem, styles.menuItemDanger]}
-                                                        onPress={() => {
-                                                            deleteTask.mutate(task.id);
-                                                            setOpenMenuTaskId(null);
-                                                        }}
-                                                    >
-                                                        <Text style={styles.menuItemDangerText}>🗑️ Delete</Text>
-                                                    </TouchableOpacity>
-                                                </View>
-                                            )}
+                                            {/* Context Menu Removed from here - Rendered globally */}
 
                                             {task.links && task.links.length > 0 && (
                                                 <TouchableOpacity style={styles.taskActionButtonDark}>
@@ -639,12 +630,19 @@ export default function HomeScreen({ navigation }: any) {
                         })}
 
                         {/* See more link */}
+                        {/* See more link */}
                         {displayedTasks.length > 3 && (
-                            <TouchableOpacity style={styles.seeMoreContainer}>
+                            <TouchableOpacity
+                                style={styles.seeMoreContainer}
+                                onPress={() => setShowAllTasks(!showAllTasks)}
+                            >
                                 <Text style={styles.seeMoreText}>
-                                    See {displayedTasks.length - 3} more task{displayedTasks.length - 3 !== 1 ? 's' : ''}
+                                    {showAllTasks
+                                        ? 'See Less'
+                                        : `See ${displayedTasks.length - 3} more task${displayedTasks.length - 3 !== 1 ? 's' : ''}`
+                                    }
                                 </Text>
-                                <Text style={styles.seeMoreArrow}>→</Text>
+                                <Text style={styles.seeMoreArrow}>{showAllTasks ? '↑' : '→'}</Text>
                             </TouchableOpacity>
                         )}
                     </>
@@ -924,16 +922,6 @@ export default function HomeScreen({ navigation }: any) {
             <NotificationModal
                 visible={showNotificationModal}
                 onClose={() => setShowNotificationModal(false)}
-                onNotificationPress={(notification) => {
-                    if (notification.task_id && selectedTask?.id !== notification.task_id) {
-                        // Find and open the task
-                        const task = todaysTasks.find(t => t.id === notification.task_id);
-                        if (task) {
-                            setSelectedTask(task);
-                        }
-                    }
-                    setShowNotificationModal(false);
-                }}
             />
 
             <ProfileModal
@@ -960,10 +948,78 @@ export default function HomeScreen({ navigation }: any) {
                 }}
             />
 
+            {/* Global Context Menu Overlay */}
+            {openMenuTaskId && menuPosition && (() => {
+                const menuTask = [...(todaysTasks || []), ...(completedTasks || [])].find(t => t.id === openMenuTaskId);
+                if (!menuTask) return null;
+
+                return (
+                    <>
+                        <TouchableOpacity
+                            style={styles.menuOverlay}
+                            activeOpacity={1}
+                            onPress={() => setOpenMenuTaskId(null)}
+                        />
+                        <View style={[styles.contextMenu, { top: menuPosition.top, right: menuPosition.right }]}>
+                            <TouchableOpacity
+                                style={styles.menuItem}
+                                onPress={() => {
+                                    setOpenMenuTaskId(null);
+                                    setSelectedTask(menuTask);
+                                }}
+                            >
+                                <Text style={styles.menuItemText}>✏️ Edit</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.menuItem}
+                                onPress={() => {
+                                    const newStatus = menuTask.status === 'pending' ? 'in_progress' : 'pending';
+                                    updateTask.mutate({
+                                        taskId: menuTask.id,
+                                        updates: { status: newStatus }
+                                    });
+                                    setOpenMenuTaskId(null);
+                                }}
+                            >
+                                <Text style={styles.menuItemText}>
+                                    {menuTask.status === 'pending' ? '🔄 Move to In Review' : '⬅️ Move to In Progress'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.menuItem}
+                                onPress={() => {
+                                    completeTask.mutate(menuTask.id);
+                                    setOpenMenuTaskId(null);
+                                }}
+                            >
+                                <Text style={styles.menuItemText}>✅ Complete</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.menuItem, styles.menuItemDanger]}
+                                onPress={() => {
+                                    deleteTask.mutate(menuTask.id);
+                                    setOpenMenuTaskId(null);
+                                }}
+                            >
+                                <Text style={styles.menuItemDangerText}>🗑️ Delete</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                );
+            })()}
+
             {/* Email Connection Screen */}
             <EmailConnectionScreen
                 visible={showEmailConnection}
                 onClose={() => setShowEmailConnection(false)}
+            />
+
+            <PaywallModal
+                visible={showPaywall}
+                onClose={() => setShowPaywall(false)}
             />
         </SafeAreaView>
     );

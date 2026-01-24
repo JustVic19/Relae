@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import * as WebBrowser from 'expo-web-browser';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Platform } from 'react-native';
+import { revenueCatService } from '../services/revenueCat';
 
 // Complete the auth session for web browser
 WebBrowser.maybeCompleteAuthSession();
@@ -21,6 +22,8 @@ interface AuthContextType {
     resetPassword: (email: string) => Promise<{ error: string | null }>;
     isEmailVerified: () => boolean;
     resendVerificationEmail: () => Promise<{ error: string | null }>;
+    isPro: boolean;
+    refreshProStatus: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,26 +63,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(false);
     const [initializing, setInitializing] = useState(true);
+    const [isPro, setIsPro] = useState(false);
 
     useEffect(() => {
+        // Initialize RevenueCat
+        revenueCatService.initialize();
+
         // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
             setInitializing(false);
+
+            if (session?.user) {
+                await revenueCatService.identifyUser(session.user.id);
+                const proStatus = await revenueCatService.checkProStatus();
+                setIsPro(proStatus);
+            }
         });
 
         // Listen for auth changes
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
+        } = supabase.auth.onAuthStateChange(async (event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
             setInitializing(false);
+
+            if (event === 'SIGNED_IN' && session?.user) {
+                await revenueCatService.identifyUser(session.user.id);
+                const proStatus = await revenueCatService.checkProStatus();
+                setIsPro(proStatus);
+            } else if (event === 'SIGNED_OUT') {
+                await revenueCatService.logout();
+                setIsPro(false);
+            }
         });
 
         return () => subscription.unsubscribe();
     }, []);
+
+    const refreshProStatus = async () => {
+        const status = await revenueCatService.checkProStatus();
+        setIsPro(status);
+        return status;
+    };
 
     const signUp = async (email: string, password: string) => {
         setLoading(true);
@@ -95,6 +123,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (error) {
                 return { error: getErrorMessage(error) };
+            }
+
+            if (data.user) {
+                await revenueCatService.identifyUser(data.user.id);
             }
 
             // User is signed up and can use the app immediately
@@ -117,6 +149,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (error) {
                 return { error: getErrorMessage(error) };
+            }
+
+            if (data.user) {
+                await revenueCatService.identifyUser(data.user.id);
+                refreshProStatus();
             }
 
             return { error: null, user: data.user };
@@ -202,6 +239,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(true);
         try {
             const { error } = await supabase.auth.signOut();
+            await revenueCatService.logout();
+            setIsPro(false);
             if (error) {
                 console.error('Sign out error:', error);
             }
@@ -267,6 +306,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         loading,
         initializing,
+        isPro,
         signUp,
         signIn,
         signInWithGoogle,
@@ -275,6 +315,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         resetPassword,
         isEmailVerified,
         resendVerificationEmail,
+        refreshProStatus
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
