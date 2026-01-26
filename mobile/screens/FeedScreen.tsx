@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal, ScrollView, Animated, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal, ScrollView, Animated, SafeAreaView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -35,7 +35,7 @@ export default function FeedScreen() {
     const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [activeFilter, setActiveFilter] = useState<'all' | 'high-confidence' | 'low-confidence' | 'urgent' | 'this-week'>('all');
-    const [testMode, setTestMode] = useState(false);
+
 
     // Calculate quick stats
     const stats = useMemo(() => {
@@ -56,54 +56,7 @@ export default function FeedScreen() {
     }, [candidates, tasks]);
 
     // Mock test candidates for testing filters and source badges
-    const mockCandidates = [
-        {
-            id: 'test-1',
-            title: 'Complete Machine Learning Assignment',
-            module: 'CS301',
-            type: 'assignment',
-            due_date: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(), // 12 hours from now (urgent)
-            confidence: 0.92,
-            source: 'gmail',
-            status: 'new',
-        },
-        {
-            id: 'test-2',
-            title: 'Team Meeting - Project Discussion',
-            module: 'Business Studies',
-            type: 'other',
-            due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
-            confidence: 0.45,
-            source: 'gcal',
-            status: 'new',
-        },
-        {
-            id: 'test-3',
-            title: 'Submit Research Paper Draft',
-            module: 'English Literature',
-            type: 'project',
-            due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
-            confidence: 0.88,
-            source: 'outlook',
-            status: 'new',
-        },
-        {
-            id: 'test-4',
-            title: 'Study Group Session',
-            due_date: new Date(Date.now() + 20 * 60 * 60 * 1000).toISOString(), // 20 hours from now
-            confidence: 0.35,
-            source: 'outlook_cal',
-            status: 'new',
-        },
-        {
-            id: 'test-5',
-            title: 'Doctor Appointment',
-            due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
-            confidence: 0.95,
-            source: 'apple_calendar',
-            status: 'new',
-        },
-    ];
+
 
     // Fetch feed data on mount
     useEffect(() => {
@@ -119,7 +72,7 @@ export default function FeedScreen() {
             const realCandidates = feedData.candidates.filter((c: any) => c.status === 'new');
 
             // Add mock candidates if test mode is on
-            setCandidates(testMode ? [...realCandidates, ...mockCandidates] : realCandidates);
+            setCandidates(realCandidates);
             setTasks(feedData.tasks.filter((t: any) => t.status === 'pending'));
         } catch (err: any) {
             console.error('Failed to fetch feed:', err);
@@ -137,8 +90,28 @@ export default function FeedScreen() {
 
     const handleConfirm = async (candidateId: string) => {
         try {
+            // Check if this is test data
+            const isTestData = candidateId.startsWith('test-');
+
             // Optimistic update
             setCandidates(prev => prev.filter(c => c.id !== candidateId));
+
+            if (isTestData) {
+                // Handle test data locally - no API call
+                const candidate = candidates.find(c => c.id === candidateId);
+                if (candidate) {
+                    const mockTask = {
+                        id: candidateId.replace('test-', 'task-'),
+                        title: candidate.title,
+                        description: candidate.description,
+                        due_date: candidate.suggested_due_date,
+                        status: 'pending'
+                    };
+                    setTasks(prev => [...prev, mockTask]);
+                }
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                return;
+            }
 
             const { task } = await API.confirmCandidate(candidateId);
 
@@ -182,8 +155,17 @@ export default function FeedScreen() {
 
     const handleIgnore = async (candidateId: string) => {
         try {
+            // Check if this is test data
+            const isTestData = candidateId.startsWith('test-');
+
             // Optimistic update
             setCandidates(prev => prev.filter(c => c.id !== candidateId));
+
+            if (isTestData) {
+                // Handle test data locally - no API call
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                return;
+            }
 
             await API.ignoreCandidate(candidateId, 'not_a_task');
 
@@ -348,18 +330,66 @@ export default function FeedScreen() {
                     <Text style={styles.title}>Feed</Text>
                     <Text style={styles.subtitle}>Review & Confirm</Text>
                 </View>
-                {/* Test Mode Toggle */}
                 <TouchableOpacity
-                    style={[styles.testModeButton, testMode && styles.testModeButtonActive]}
+                    style={styles.testButton}
                     onPress={() => {
-                        setTestMode(!testMode);
-                        // Refresh data after toggling
-                        setTimeout(fetchFeedData, 100);
+                        const mockCandidates = [
+                            {
+                                id: `test-${Date.now()}-1`,
+                                title: 'Submit Final Report',
+                                description: 'Psychology 101 final research paper due next Monday',
+                                confidence: 0.92,
+                                source: 'gmail',
+                                extracted_at: new Date().toISOString(),
+                                suggested_due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                                status: 'new'
+                            },
+                            {
+                                id: `test-${Date.now()}-2`,
+                                title: 'Team Meeting',
+                                description: 'Project review with Dr. Smith - Friday 2pm',
+                                confidence: 0.88,
+                                source: 'gcal',
+                                extracted_at: new Date().toISOString(),
+                                suggested_due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                                status: 'new'
+                            },
+                            {
+                                id: `test-${Date.now()}-3`,
+                                title: 'Math Assignment',
+                                description: 'Complete problem set 5 chapters 12-14',
+                                confidence: 0.75,
+                                source: 'outlook',
+                                extracted_at: new Date().toISOString(),
+                                suggested_due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                                status: 'new'
+                            },
+                            {
+                                id: `test-${Date.now()}-4`,
+                                title: 'Lab Report',
+                                description: 'Chemistry lab writeup from Tuesday experiment',
+                                confidence: 0.45,
+                                source: 'gmail',
+                                extracted_at: new Date().toISOString(),
+                                suggested_due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                                status: 'new'
+                            },
+                            {
+                                id: `test-${Date.now()}-5`,
+                                title: 'Club Social Event',
+                                description: 'Student Union meetup - bring your ideas!',
+                                confidence: 0.68,
+                                source: 'outlook_cal',
+                                extracted_at: new Date().toISOString(),
+                                suggested_due_date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+                                status: 'new'
+                            }
+                        ];
+                        setCandidates(prev => [...mockCandidates, ...prev]);
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                     }}
                 >
-                    <Text style={[styles.testModeText, testMode && styles.testModeTextActive]}>
-                        {testMode ? '✅ Test Mode' : '🧪 Test Mode'}
-                    </Text>
+                    <Text style={styles.testButtonText}>📸 Test Data</Text>
                 </TouchableOpacity>
             </View>
 
@@ -725,7 +755,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingTop: 16,
+        paddingTop: Platform.OS === 'android' ? 40 : 20,
         paddingBottom: 20,
     },
     testModeButton: {
@@ -1040,6 +1070,17 @@ const styles = StyleSheet.create({
     swipeText: {
         color: '#FFFFFF',
         fontSize: 14,
+        fontWeight: '600',
+    },
+    testButton: {
+        backgroundColor: '#1A1A1A',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+    },
+    testButtonText: {
+        color: '#FFFFFF',
+        fontSize: 13,
         fontWeight: '600',
     },
 });

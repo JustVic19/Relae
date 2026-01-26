@@ -28,6 +28,30 @@ export interface Achievement {
     created_at: string;
 }
 
+export interface DailyTaskCount {
+    date: string;
+    count: number;
+}
+
+export interface HourlyDistribution {
+    hour: number;
+    count: number;
+}
+
+export interface WeekdayDistribution {
+    day: string;
+    count: number;
+}
+
+export interface DeepInsights {
+    dailyTrend: DailyTaskCount[]; // Last 7 days
+    weekdayDistribution: WeekdayDistribution[]; // Mon-Sun
+    hourlyDistribution: HourlyDistribution[]; // 0-23
+    peakProductivityHour: number | null;
+    totalCompleted: number;
+    averagePerDay: number;
+}
+
 /**
  * Get user profile
  */
@@ -196,6 +220,100 @@ export async function getUserAchievements(): Promise<Achievement[]> {
 
     if (error) throw error;
     return data || [];
+}
+
+/**
+ * Get deep productivity insights (Pro feature)
+ */
+export async function getDeepInsights(): Promise<DeepInsights> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Get completed tasks from the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { data: tasks, error } = await supabase
+        .from('tasks')
+        .select('id, completed_at')
+        .eq('user_id', user.id)
+        .eq('is_completed', true)
+        .not('completed_at', 'is', null)
+        .gte('completed_at', thirtyDaysAgo.toISOString())
+        .order('completed_at', { ascending: true });
+
+    if (error) throw error;
+
+    // Initialize data structures
+    const dailyTrend: DailyTaskCount[] = [];
+    const weekdayDistribution: WeekdayDistribution[] = [
+        { day: 'Mon', count: 0 },
+        { day: 'Tue', count: 0 },
+        { day: 'Wed', count: 0 },
+        { day: 'Thu', count: 0 },
+        { day: 'Fri', count: 0 },
+        { day: 'Sat', count: 0 },
+        { day: 'Sun', count: 0 },
+    ];
+    const hourlyDistribution: HourlyDistribution[] = Array.from({ length: 24 }, (_, i) => ({
+        hour: i,
+        count: 0,
+    }));
+
+    // Calculate last 7 days trend
+    const last7Days: Record<string, number> = {};
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        last7Days[dateStr] = 0;
+    }
+
+    // Process tasks
+    tasks.forEach((task) => {
+        if (!task.completed_at) return;
+
+        const completedDate = new Date(task.completed_at);
+        const dateStr = completedDate.toISOString().split('T')[0];
+        const hour = completedDate.getHours();
+        const dayOfWeek = completedDate.getDay(); // 0 = Sunday
+
+        // Daily trend (last 7 days)
+        if (last7Days.hasOwnProperty(dateStr)) {
+            last7Days[dateStr]++;
+        }
+
+        // Hourly distribution
+        hourlyDistribution[hour].count++;
+
+        // Weekday distribution (adjust Sunday from 0 to 6 for our array)
+        const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        weekdayDistribution[adjustedDay].count++;
+    });
+
+    // Convert last7Days to array
+    Object.entries(last7Days).forEach(([date, count]) => {
+        dailyTrend.push({ date, count });
+    });
+
+    // Find peak productivity hour
+    const maxHourly = hourlyDistribution.reduce((max, curr) =>
+        curr.count > max.count ? curr : max
+    );
+    const peakProductivityHour = maxHourly.count > 0 ? maxHourly.hour : null;
+
+    // Calculate metrics
+    const totalCompleted = tasks.length;
+    const averagePerDay = totalCompleted / 30;
+
+    return {
+        dailyTrend,
+        weekdayDistribution,
+        hourlyDistribution,
+        peakProductivityHour,
+        totalCompleted,
+        averagePerDay: Number(averagePerDay.toFixed(1)),
+    };
 }
 
 /**

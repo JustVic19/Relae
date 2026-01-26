@@ -16,6 +16,7 @@ import { useAuth } from '../contexts/AuthContext';
 import NotificationModal from './NotificationModal';
 import PremiumBanner from './PremiumBanner';
 import PaywallModal from './PaywallModal';
+import InsightsModal from './InsightsModal';
 import { pickImage } from '../services/profileService';
 
 interface ProfileModalProps {
@@ -54,6 +55,7 @@ export default function ProfileModal({ visible, onClose, onEmailSetup }: Profile
     const [showAvatarPicker, setShowAvatarPicker] = useState(false);
     const [showNotificationModal, setShowNotificationModal] = useState(false);
     const [showPaywall, setShowPaywall] = useState(false);
+    const [showInsights, setShowInsights] = useState(false);
 
     const handleSaveName = () => {
         if (tempName.trim()) {
@@ -298,6 +300,37 @@ export default function ProfileModal({ visible, onClose, onEmailSetup }: Profile
                                             <Text style={styles.statLabel}>Achievements</Text>
                                         </View>
                                     </View>
+
+                                    {/* Deep Insights Button */}
+                                    <TouchableOpacity
+                                        style={styles.insightsButton}
+                                        onPress={() => {
+                                            if (isPro) {
+                                                setShowInsights(true);
+                                            } else {
+                                                setShowPaywall(true);
+                                            }
+                                        }}
+                                    >
+                                        <View style={styles.insightsButtonContent}>
+                                            <View>
+                                                <View style={styles.insightsButtonTitleRow}>
+                                                    <Text style={styles.insightsButtonTitle}>📊 Advanced Deep Insights</Text>
+                                                    {!isPro && (
+                                                        <View style={styles.proBadge}>
+                                                            <Text style={styles.proBadgeText}>PRO</Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                <Text style={styles.insightsButtonSubtitle}>
+                                                    {isPro
+                                                        ? 'View your detailed productivity trends'
+                                                        : 'Unlock detailed charts and analytics'}
+                                                </Text>
+                                            </View>
+                                            <Text style={styles.insightsButtonChevron}>›</Text>
+                                        </View>
+                                    </TouchableOpacity>
                                 </>
                             ) : (
                                 <Text style={styles.placeholderText}>No stats available</Text>
@@ -488,6 +521,11 @@ export default function ProfileModal({ visible, onClose, onEmailSetup }: Profile
                 <PaywallModal
                     visible={showPaywall}
                     onClose={() => setShowPaywall(false)}
+                />
+
+                <InsightsModal
+                    visible={showInsights}
+                    onClose={() => setShowInsights(false)}
                 />
             </View>
         </Modal>
@@ -893,5 +931,50 @@ const styles = StyleSheet.create({
     dangerText: {
         color: '#EF4444',
         fontWeight: '600',
+    },
+    insightsButton: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 20,
+        marginTop: 20,
+        borderWidth: 2,
+        borderColor: '#6C63FF',
+    },
+    insightsButtonContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    insightsButtonTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 6,
+    },
+    insightsButtonTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1A1A1A',
+    },
+    insightsButtonSubtitle: {
+        fontSize: 13,
+        color: '#6B6B6B',
+    },
+    insightsButtonChevron: {
+        fontSize: 24,
+        color: '#6C63FF',
+        fontWeight: '600',
+    },
+    proBadge: {
+        backgroundColor: '#6C63FF',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 8,
+    },
+    proBadgeText: {
+        color: '#FFFFFF',
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 0.5,
     },
 });

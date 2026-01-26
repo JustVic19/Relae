@@ -1,21 +1,40 @@
 {
-    "cli": {
-        "version": ">= 7.0.0"
+  "cli": {
+    "version": ">= 7.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
     },
-    "build": {
-        "development": {
-            "developmentClient": true,
-            "distribution": "internal"
-        },
-        "preview": {
-            "distribution": "internal"
-        },
-        "production": {
-            "channel": "production",
-            "autoIncrement": true
-        }
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
     },
-    "submit": {
-        "production": {}
+    "production": {
+      "channel": "production",
+      "autoIncrement": true,
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://kikaavafovalupmhzmpc.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtpa2FhdmFmb3ZhbHVwbWh6bXBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0NTMxNjUsImV4cCI6MjA4MjAyOTE2NX0.5y9-fUMuqenF1uvXHuo7BhmeBxIOMLGs0mYVcYuaxXs",
+        "EXPO_PUBLIC_BACKEND_URL": "https://metronomical-sublacunose-theresa.ngrok-free.dev",
+        "EXPO_PUBLIC_REVENUECAT_API_KEY": "appl_XHuAnRvFbTZAbkgnSAbUTtUzSZd",
+        "EXPO_PUBLIC_ENV": "production"
+      }
     }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6757104051"
+      }
+    }
+  }
 }

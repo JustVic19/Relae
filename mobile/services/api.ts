@@ -26,6 +26,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
 
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true', // Bypass ngrok warning page
         ...(options.headers as Record<string, string>),
     };
 
@@ -56,6 +57,7 @@ export async function savePushToken(token: string): Promise<void> {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${await getAuthToken()}`,
+                'ngrok-skip-browser-warning': 'true',
             },
             body: JSON.stringify({ token, platform: 'expo' }),
         });

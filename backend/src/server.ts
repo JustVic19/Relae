@@ -30,6 +30,12 @@ async function start() {
             credentials: true,
         });
 
+        // Ngrok bypass middleware (for free tier)
+        fastify.addHook('onRequest', async (request, reply) => {
+            // Add ngrok bypass header to response
+            reply.header('ngrok-skip-browser-warning', 'true');
+        });
+
         // Global error handler
         fastify.setErrorHandler(errorHandler);
 

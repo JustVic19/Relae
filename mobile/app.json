@@ -17,11 +17,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.relaeai.app",
       "associatedDomains": [
+        "applinks:kikaavafovalupmhzmpc.supabase.co",
         "applinks:kikaavafovalupmhzmpc.supabase.co"
       ],
       "infoPlist": {
         "NSCalendarsUsageDescription": "Relae needs access to your calendar to sync your schedule and prevent conflicts.",
-        "NSRemindersUsageDescription": "Relae needs access to your reminders to import your tasks."
+        "NSRemindersUsageDescription": "Relae needs access to your reminders to import your tasks.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -43,8 +45,7 @@
     },
     "owner": "justvic20",
     "plugins": [
-      "@react-native-community/datetimepicker",
-      "@sentry/react-native"
+      "@react-native-community/datetimepicker"
     ]
   }
 }

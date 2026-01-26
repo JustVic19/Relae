@@ -7,10 +7,12 @@ import {
     pickImage,
     getUserStats,
     getUserAchievements,
+    getDeepInsights,
     logout,
     UserProfile,
     UserStats,
     Achievement,
+    DeepInsights,
 } from '../services/profileService';
 
 /**
@@ -117,5 +119,22 @@ export function useAchievements() {
     return {
         achievements: achievements || [],
         isLoading,
+    };
+}
+
+/**
+ * Hook to fetch deep productivity insights (Pro feature)
+ */
+export function useDeepInsights() {
+    const { data: insights, isLoading, error } = useQuery<DeepInsights>({
+        queryKey: ['deepInsights'],
+        queryFn: getDeepInsights,
+        staleTime: 60 * 1000, // 1 minute
+    });
+
+    return {
+        insights,
+        isLoading,
+        error,
     };
 }
