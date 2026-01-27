@@ -174,7 +174,7 @@ export class TaskCandidateService {
     async ignoreCandidate(
         candidateId: string,
         userId: string,
-        reason?: string
+        _reason?: string
     ): Promise<TaskCandidate> {
         const { data, error } = await supabaseAdmin
             .from('task_candidates')

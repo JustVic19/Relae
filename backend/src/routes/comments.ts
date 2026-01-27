@@ -9,7 +9,7 @@ export async function commentRoutes(fastify: FastifyInstance) {
     // Get comments for a task
     fastify.get<{ Params: { id: string } }>('/tasks/:id/comments', {
         preHandler: authMiddleware
-    }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    }, async (request: FastifyRequest<{ Params: { id: string } }>, _reply: FastifyReply) => {
         const { id } = request.params;
         const comments = await commentService.getTaskComments(id);
         return { comments };

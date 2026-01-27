@@ -227,9 +227,9 @@ export class TaskService {
 
         // Check if weekly goal achieved
         const currentWeek = await preferencesService.getCurrentWeekStats(userId);
-        const preferences = await preferencesService.getPreferences(userId);
+        const preferences = await preferencesService.getUserPreferences(userId);
 
-        if (currentWeek && preferences.weekly_goal && currentWeek.completed === preferences.weekly_goal) {
+        if (currentWeek && preferences.weekly_goal && currentWeek.tasks_completed === preferences.weekly_goal) {
             await notificationService.notifyGoalAchieved(userId, preferences.weekly_goal);
         }
 

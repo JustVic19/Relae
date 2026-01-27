@@ -32,7 +32,7 @@ class IntelligenceService {
 
         for (let i = 0; i < items.length; i += batchSize) {
             const batch = items.slice(i, i + batchSize);
-            const contentText = batch.map((item, idx) => `
+            const contentText = batch.map((item, _idx) => `
 ID: ${item.id}
 Type: ${item.type}
 Title: ${item.title}

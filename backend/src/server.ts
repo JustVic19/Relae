@@ -31,7 +31,7 @@ async function start() {
         });
 
         // Ngrok bypass middleware (for free tier)
-        fastify.addHook('onRequest', async (request, reply) => {
+        fastify.get('/health', async (_request, reply) => {
             // Add ngrok bypass header to response
             reply.header('ngrok-skip-browser-warning', 'true');
         });

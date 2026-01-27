@@ -98,7 +98,7 @@ export class WebhookService {
     /**
      * Update status without revoking access (e.g. cancellation means no renew, but still active)
      */
-    private async updateSubscriptionStatus(userId: string, status: string, event: RCEvent) {
+    private async updateSubscriptionStatus(userId: string, status: string, _event: RCEvent) {
         await supabaseAdmin.from('user_profiles').update({
             subscription_status: status
         }).eq('id', userId);

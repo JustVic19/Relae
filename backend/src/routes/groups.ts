@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { supabaseAdmin } from '../lib/supabase';
+import { supabaseAdmin, supabase } from '../lib/supabase';
 import { GroupService } from '../services/groupService';
 import { authMiddleware } from '../middleware/auth';
 
