@@ -218,7 +218,7 @@ export class TaskService {
     /**
      * Private helper to generate notifications on task completion
      */
-    private async generateCompletionNotifications(userId: string, taskId: string): Promise<void> {
+    private async generateCompletionNotifications(userId: string, _taskId: string): Promise<void> {
         const { NotificationService } = await import('./notificationService');
         const { PreferencesService } = await import('./preferencesService');
 
