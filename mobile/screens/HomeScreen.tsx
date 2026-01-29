@@ -10,6 +10,7 @@ import {
     Image,
     Animated,
     Alert,
+    Share,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
@@ -25,6 +26,7 @@ import { useEmailIntegrations } from '../hooks/useEmailIntegrations';
 import QuickAddTaskModal from '../components/QuickAddTaskModal';
 import TaskDetailModal from '../components/TaskDetailModal';
 import EditGoalModal from '../components/EditGoalModal';
+import NotificationsInbox from '../components/NotificationsInbox';
 import NotificationModal from '../components/NotificationModal';
 import ProfileModal from '../components/ProfileModal';
 import EmailOnboardingWalkthrough from '../components/EmailOnboardingWalkthrough';
@@ -120,7 +122,8 @@ export default function HomeScreen({ navigation }: any) {
     const [showEditGoalModal, setShowEditGoalModal] = useState(false);
     const [showWeeklyBreakdown, setShowWeeklyBreakdown] = useState(false);
     const [urgencyFilter, setUrgencyFilter] = useState<'all' | 'urgent' | 'soon' | 'later'>('all');
-    const [showNotificationModal, setShowNotificationModal] = useState(false);
+    const [showNotificationsInbox, setShowNotificationsInbox] = useState(false);
+    const [showNotificationSettings, setShowNotificationSettings] = useState(false);
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [showEmailOnboarding, setShowEmailOnboarding] = useState(false);
     const [showEmailConnection, setShowEmailConnection] = useState(false);
@@ -322,7 +325,7 @@ export default function HomeScreen({ navigation }: any) {
                         )}
                         <TouchableOpacity
                             style={styles.notificationButton}
-                            onPress={() => setShowNotificationModal(true)}
+                            onPress={() => setShowNotificationsInbox(true)}
                         >
                             <Text style={styles.notificationIcon}>🔔</Text>
                             {unreadCount > 0 && (
@@ -440,7 +443,49 @@ export default function HomeScreen({ navigation }: any) {
                             <Text style={styles.dateText}>{dayNum} {dayName}</Text>
                         </View>
                         <View style={styles.summaryActions}>
-                            <TouchableOpacity style={styles.iconButton}>
+                            <TouchableOpacity
+                                style={styles.iconButton}
+                                onPress={async () => {
+                                    try {
+                                        // Filter tasks due today
+                                        const today = new Date();
+                                        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                                        const todayEnd = new Date(todayStart);
+                                        todayEnd.setDate(todayEnd.getDate() + 1);
+
+                                        const tasksDueToday = displayedTasks.filter(t => {
+                                            if (!t.due_date) return false;
+                                            const dueDate = new Date(t.due_date);
+                                            return dueDate >= todayStart && dueDate < todayEnd;
+                                        });
+
+                                        // Create share message
+                                        const statusLabel = activeTab === 'review' ? 'to review' :
+                                            activeTab === 'progress' ? 'in progress' : 'completed';
+
+                                        let message = `📋 My Tasks for Today (${statusLabel})\n\n`;
+
+                                        if (tasksDueToday.length === 0) {
+                                            message += `No tasks ${statusLabel} for today! ✨`;
+                                        } else {
+                                            tasksDueToday.forEach((task, index) => {
+                                                const checkbox = activeTab === 'completed' ? '✅' : '☐';
+                                                message += `${checkbox} ${task.title}\n`;
+                                            });
+                                            message += `\nTotal: ${tasksDueToday.length} task${tasksDueToday.length !== 1 ? 's' : ''} 💪`;
+                                        }
+
+                                        // Share via native share dialog
+                                        await Share.share({
+                                            message: message,
+                                        });
+                                    } catch (error: any) {
+                                        if (error.code !== 'ERR_CANCELED') {
+                                            console.error('Error sharing tasks:', error);
+                                        }
+                                    }
+                                }}
+                            >
                                 <Text style={styles.iconButtonText}>🔗</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
@@ -455,15 +500,71 @@ export default function HomeScreen({ navigation }: any) {
                     <Text style={styles.currentTasksLabel}>Current tasks</Text>
 
                     <View style={styles.taskCountRow}>
-                        <Text style={styles.taskCountText}>You have </Text>
-                        <Text style={styles.taskCountNumber}>{displayedTasks.length}</Text>
-                        <Text style={styles.taskCountText}> tasks </Text>
-                        {highPriorityCount > 0 && (
-                            <View style={styles.priorityBadge}>
-                                <Text style={styles.priorityBadgeText}>High ⚠️</Text>
-                            </View>
-                        )}
-                        <Text style={styles.taskCountText}> for today</Text>
+                        {(() => {
+                            // Calculate tasks due TODAY in the current tab
+                            const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                            const todayEnd = new Date(todayStart);
+                            todayEnd.setDate(todayEnd.getDate() + 1);
+
+                            const tasksDueToday = displayedTasks.filter(t => {
+                                if (!t.due_date) return false;
+                                const dueDate = new Date(t.due_date);
+                                return dueDate >= todayStart && dueDate < todayEnd;
+                            });
+
+                            const upcomingTasks = displayedTasks.filter(t => {
+                                if (!t.due_date) return false;
+                                const dueDate = new Date(t.due_date);
+                                return dueDate >= todayEnd;
+                            });
+
+                            const countToday = tasksDueToday.length;
+                            const countUpcoming = upcomingTasks.length;
+
+                            // Get status-specific messaging
+                            const getStatusMessage = () => {
+                                if (activeTab === 'review') return 'to review';
+                                if (activeTab === 'progress') return 'in progress';
+                                if (activeTab === 'completed') return 'completed';
+                                return '';
+                            };
+
+                            const statusMessage = getStatusMessage();
+
+                            // Determine what to show
+                            if (countToday > 0 && countUpcoming > 0) {
+                                // Both today and upcoming
+                                return (
+                                    <>
+                                        <Text style={styles.taskCountNumber}>{countToday}</Text>
+                                        <Text style={styles.taskCountText}> {statusMessage} for today, </Text>
+                                        <Text style={styles.taskCountNumber}>{countUpcoming}</Text>
+                                        <Text style={styles.taskCountText}> upcoming</Text>
+                                    </>
+                                );
+                            } else if (countToday > 0) {
+                                // Only tasks due today
+                                return (
+                                    <>
+                                        <Text style={styles.taskCountNumber}>{countToday}</Text>
+                                        <Text style={styles.taskCountText}> {statusMessage} for today</Text>
+                                    </>
+                                );
+                            } else if (countUpcoming > 0) {
+                                // Only upcoming tasks
+                                return (
+                                    <>
+                                        <Text style={styles.taskCountNumber}>{countUpcoming}</Text>
+                                        <Text style={styles.taskCountText}> upcoming task{countUpcoming !== 1 ? 's' : ''} {statusMessage}</Text>
+                                    </>
+                                );
+                            } else {
+                                // No tasks
+                                return (
+                                    <Text style={styles.taskCountText}>No tasks {statusMessage}</Text>
+                                );
+                            }
+                        })()}
                     </View>
 
                     {hashtags.length > 0 && (
@@ -919,9 +1020,18 @@ export default function HomeScreen({ navigation }: any) {
                 isSaving={isUpdating}
             />
 
+            <NotificationsInbox
+                visible={showNotificationsInbox}
+                onClose={() => setShowNotificationsInbox(false)}
+                onOpenSettings={() => {
+                    setShowNotificationsInbox(false);
+                    setShowNotificationSettings(true);
+                }}
+            />
+
             <NotificationModal
-                visible={showNotificationModal}
-                onClose={() => setShowNotificationModal(false)}
+                visible={showNotificationSettings}
+                onClose={() => setShowNotificationSettings(false)}
             />
 
             <ProfileModal

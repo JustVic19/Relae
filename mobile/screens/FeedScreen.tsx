@@ -6,7 +6,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import * as API from '../services/api';
 import EditCandidateModal from '../components/EditCandidateModal';
-import SocialPulse from '../components/SocialPulse';
+// import SocialPulse from '../components/SocialPulse'; // Hidden for v1.0, will re-enable in future version
 
 // Helper function to get source badge
 const getSourceBadge = (source?: string) => {
@@ -330,67 +330,6 @@ export default function FeedScreen() {
                     <Text style={styles.title}>Feed</Text>
                     <Text style={styles.subtitle}>Review & Confirm</Text>
                 </View>
-                <TouchableOpacity
-                    style={styles.testButton}
-                    onPress={() => {
-                        const mockCandidates = [
-                            {
-                                id: `test-${Date.now()}-1`,
-                                title: 'Submit Final Report',
-                                description: 'Psychology 101 final research paper due next Monday',
-                                confidence: 0.92,
-                                source: 'gmail',
-                                extracted_at: new Date().toISOString(),
-                                suggested_due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-                                status: 'new'
-                            },
-                            {
-                                id: `test-${Date.now()}-2`,
-                                title: 'Team Meeting',
-                                description: 'Project review with Dr. Smith - Friday 2pm',
-                                confidence: 0.88,
-                                source: 'gcal',
-                                extracted_at: new Date().toISOString(),
-                                suggested_due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-                                status: 'new'
-                            },
-                            {
-                                id: `test-${Date.now()}-3`,
-                                title: 'Math Assignment',
-                                description: 'Complete problem set 5 chapters 12-14',
-                                confidence: 0.75,
-                                source: 'outlook',
-                                extracted_at: new Date().toISOString(),
-                                suggested_due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-                                status: 'new'
-                            },
-                            {
-                                id: `test-${Date.now()}-4`,
-                                title: 'Lab Report',
-                                description: 'Chemistry lab writeup from Tuesday experiment',
-                                confidence: 0.45,
-                                source: 'gmail',
-                                extracted_at: new Date().toISOString(),
-                                suggested_due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                                status: 'new'
-                            },
-                            {
-                                id: `test-${Date.now()}-5`,
-                                title: 'Club Social Event',
-                                description: 'Student Union meetup - bring your ideas!',
-                                confidence: 0.68,
-                                source: 'outlook_cal',
-                                extracted_at: new Date().toISOString(),
-                                suggested_due_date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-                                status: 'new'
-                            }
-                        ];
-                        setCandidates(prev => [...mockCandidates, ...prev]);
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    }}
-                >
-                    <Text style={styles.testButtonText}>📸 Test Data</Text>
-                </TouchableOpacity>
             </View>
 
             <ScrollView
@@ -432,8 +371,8 @@ export default function FeedScreen() {
                     </LinearGradient>
                 </View>
 
-                {/* Social Pulse Section */}
-                <SocialPulse />
+                {/* Social Pulse Section - Hidden for v1.0 */}
+                {/* <SocialPulse /> */}
 
                 {/* New to Confirm Section */}
                 {candidates.length > 0 && (

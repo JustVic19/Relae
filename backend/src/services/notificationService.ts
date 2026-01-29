@@ -273,12 +273,45 @@ export class NotificationService {
             return null;
         }
 
-        const timeText = hoursUntilDue < 2 ? `${Math.round(hoursUntilDue * 60)} minutes` : `${Math.round(hoursUntilDue)} hours`;
+        // Format time appropriately based on hours until due
+        let timeText: string;
+        let emoji: string;
+
+        if (hoursUntilDue >= 144) {
+            // 6+ days
+            const days = Math.round(hoursUntilDue / 24);
+            timeText = `${days} day${days !== 1 ? 's' : ''}`;
+            emoji = '📅';
+        } else if (hoursUntilDue >= 48) {
+            // 2-6 days
+            const days = Math.round(hoursUntilDue / 24);
+            timeText = `${days} days`;
+            emoji = '⏰';
+        } else if (hoursUntilDue >= 24) {
+            // 1-2 days
+            timeText = '1 day';
+            emoji = '⏰';
+        } else if (hoursUntilDue >= 2) {
+            // 2-24 hours
+            const hours = Math.round(hoursUntilDue);
+            timeText = `${hours} hour${hours !== 1 ? 's' : ''}`;
+            emoji = '⚠️';
+        } else if (hoursUntilDue >= 1) {
+            // 1-2 hours
+            const hours = Math.round(hoursUntilDue);
+            timeText = `${hours} hour${hours !== 1 ? 's' : ''}`;
+            emoji = '🚨';
+        } else {
+            // Less than 1 hour
+            const minutes = Math.round(hoursUntilDue * 60);
+            timeText = `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+            emoji = '🚨';
+        }
 
         return this.createNotification({
             user_id: userId,
             type: 'deadline_approaching',
-            title: '⏰ Deadline Approaching',
+            title: `${emoji} Deadline Approaching`,
             message: `"${taskTitle}" is due in ${timeText}`,
             task_id: taskId,
         });
@@ -383,23 +416,42 @@ export class NotificationService {
     /**
      * Check for upcoming deadlines and generate notifications
      * This should be called periodically (e.g., every 30 minutes via cron)
+     * 
+     * Notification schedule:
+     * - 1 week before (7 days)
+     * - 3 days before
+     * - 1 day before (24 hours)
+     * - 2 hours before
+     * - 1 hour before
      */
     async checkUpcomingDeadlines(): Promise<{ notified: number; errors: number }> {
         let notified = 0;
         let errors = 0;
 
         try {
-            // Get all tasks with deadlines in the next 25 hours (to catch 24h alerts)
             const now = new Date();
-            const next25Hours = new Date(now.getTime() + 25 * 60 * 60 * 1000);
 
+            // Define time windows for different notifications (in hours)
+            const timeWindows = [
+                { hours: 168, label: '1 week', minHours: 167, maxHours: 169 },      // 7 days ± 1 hour
+                { hours: 72, label: '3 days', minHours: 71, maxHours: 73 },         // 3 days ± 1 hour
+                { hours: 24, label: '1 day', minHours: 23, maxHours: 25 },          // 24 hours ± 1 hour
+                { hours: 2, label: '2 hours', minHours: 1.5, maxHours: 2.5 },       // 2 hours ± 30 min
+                { hours: 1, label: '1 hour', minHours: 0.5, maxHours: 1.5 },        // 1 hour ± 30 min
+            ];
+
+            // Get furthest time window (1 week + buffer)
+            const maxHours = Math.max(...timeWindows.map(w => w.maxHours));
+            const furthestDeadline = new Date(now.getTime() + maxHours * 60 * 60 * 1000);
+
+            // Fetch all tasks with upcoming deadlines
             const { data: tasks, error } = await this.supabase
                 .from('tasks')
-                .select('id, user_id, title, due_date')
-                .eq('status', 'in_progress')
+                .select('id, user_id, title, due_date, type')
+                .in('status', ['pending', 'in_progress'])
                 .not('due_date', 'is', null)
                 .gte('due_date', now.toISOString())
-                .lte('due_date', next25Hours.toISOString());
+                .lte('due_date', furthestDeadline.toISOString());
 
             if (error) {
                 console.error('Error fetching tasks for deadline check:', error);
@@ -416,33 +468,26 @@ export class NotificationService {
                     const dueDate = new Date(task.due_date!);
                     const hoursUntilDue = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-                    // Check if we should send a notification
-                    let shouldNotify = false;
-
-                    // 24-hour alert (23-25 hours window)
-                    if (hoursUntilDue >= 23 && hoursUntilDue <= 25) {
-                        shouldNotify = true;
-                    }
-                    // 1-hour alert (0.5-1.5 hours window)
-                    else if (hoursUntilDue >= 0.5 && hoursUntilDue <= 1.5) {
-                        shouldNotify = true;
-                    }
-
-                    if (shouldNotify) {
-                        // Check if we already sent a notification for this task recently
-                        const recentNotification = await this.hasRecentDeadlineNotification(
-                            task.user_id,
-                            task.id
-                        );
-
-                        if (!recentNotification) {
-                            await this.notifyDeadlineApproaching(
+                    // Check which notification window this falls into
+                    for (const window of timeWindows) {
+                        if (hoursUntilDue >= window.minHours && hoursUntilDue <= window.maxHours) {
+                            // Check if we already sent a notification for this window
+                            const recentNotification = await this.hasRecentDeadlineNotification(
                                 task.user_id,
                                 task.id,
-                                task.title,
-                                hoursUntilDue
+                                window.hours
                             );
-                            notified++;
+
+                            if (!recentNotification) {
+                                await this.notifyDeadlineApproaching(
+                                    task.user_id,
+                                    task.id,
+                                    task.title,
+                                    hoursUntilDue
+                                );
+                                notified++;
+                            }
+                            break; // Only send one notification per check
                         }
                     }
                 } catch (taskError) {
@@ -459,10 +504,28 @@ export class NotificationService {
     }
 
     /**
-     * Check if we've sent a deadline notification for this task recently (within 2 hours)
+     * Check if we've sent a deadline notification for this task recently
+     * Updated to handle different notification windows
      */
-    private async hasRecentDeadlineNotification(userId: string, taskId: string): Promise<boolean> {
-        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    private async hasRecentDeadlineNotification(
+        userId: string,
+        taskId: string,
+        windowHours: number
+    ): Promise<boolean> {
+        // Check for notifications sent in the last period
+        // Use longer check window for longer deadlines (e.g., don't spam weekly reminders)
+        let checkWindowHours: number;
+        if (windowHours >= 168) {
+            checkWindowHours = 12; // 12 hours for weekly reminders
+        } else if (windowHours >= 72) {
+            checkWindowHours = 6; // 6 hours for 3-day reminders
+        } else if (windowHours >= 24) {
+            checkWindowHours = 4; // 4 hours for daily reminders
+        } else {
+            checkWindowHours = 1.5; // 1.5 hours for hourly reminders
+        }
+
+        const checkFrom = new Date(Date.now() - checkWindowHours * 60 * 60 * 1000);
 
         const { count } = await this.supabase
             .from('notifications')
@@ -470,7 +533,7 @@ export class NotificationService {
             .eq('user_id', userId)
             .eq('task_id', taskId)
             .eq('type', 'deadline_approaching')
-            .gte('created_at', twoHoursAgo.toISOString());
+            .gte('created_at', checkFrom.toISOString());
 
         return (count || 0) > 0;
     }
